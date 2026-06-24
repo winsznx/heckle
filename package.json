@@ -1,0 +1,17 @@
+{
+  "name": "heckle",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @heckle/web dev",
+    "build": "pnpm --filter @heckle/web build",
+    "agent": "pnpm --filter @heckle/inference-agent start",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "contracts:build": "forge build --root packages/contracts",
+    "contracts:test": "forge test --root packages/contracts -vv"
+  }
+}

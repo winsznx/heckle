@@ -1,0 +1,25 @@
+{
+  "name": "@heckle/inference-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@0gfoundation/0g-compute-ts-sdk": "^0.8.4",
+    "@0gfoundation/0g-storage-ts-sdk": "^1.2.10",
+    "@heckle/shared": "workspace:*",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.1",
+    "openai": "^4.104.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
