@@ -27,11 +27,15 @@ packages/shared       chain config, addresses, archetypes, demo event, design to
 ## Quickstart
 
 ```bash
+git clone --recurse-submodules https://github.com/winsznx/heckle
+# already cloned without submodules? fetch the Foundry deps (forge-std, OpenZeppelin):
+git submodule update --init --recursive
+
 pnpm install
 cp .env.example .env       # fill in keys/addresses
+pnpm contracts:test        # Foundry tests (6/6 passing)
 pnpm dev                   # web on :3000
-pnpm contracts:test        # Foundry tests
-pnpm agent                 # inference agent
+pnpm agent                 # inference agent (needs AGENT_PRIVATE_KEY + deployed addresses)
 ```
 
 Deploy + mint + Vercel steps require wallet signatures — see `DEPLOY.md` (generated in Phase 2/11).
