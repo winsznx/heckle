@@ -24,7 +24,7 @@ estimated well under ~1 0G total at current gas. Confirm with `--estimate` befor
 
 ```bash
 cd packages/contracts
-forge script script/Deploy.s.sol:DeployScript \
+forge script script/Deploy.s.sol:Deploy \
   --rpc-url https://evmrpc-testnet.0g.ai \
   --private-key $DEPLOYER_PRIVATE_KEY \
   --broadcast -vvv
@@ -36,7 +36,7 @@ If you hit an `invalid opcode` revert, the chain rejects a cancun opcode — cha
 
 ```bash
 cd packages/contracts
-forge script script/Deploy.s.sol:DeployScript \
+forge script script/Deploy.s.sol:Deploy \
   --rpc-url https://evmrpc.0g.ai \
   --private-key $DEPLOYER_PRIVATE_KEY \
   --broadcast -vvv

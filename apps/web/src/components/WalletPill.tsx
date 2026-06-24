@@ -56,10 +56,18 @@ export function WalletPill() {
           <button
             type="button"
             onClick={openAccountModal}
-            className="inline-flex items-center gap-2 border border-rule bg-paper text-ink px-3 py-1 font-mono text-xs uppercase tracking-wide transition-transform hover:-translate-y-px"
+            title="Account — balance, copy address, disconnect"
+            className="inline-flex items-stretch border border-rule bg-paper text-ink font-mono text-xs uppercase tracking-wide transition-transform hover:-translate-y-px"
           >
-            <span aria-hidden className="inline-block w-2 h-2 bg-ink rounded-full" />
-            {truncateAddr(account.address)}
+            {account.displayBalance && (
+              <span className="inline-flex items-center border-r border-rule px-3 py-1">
+                {account.displayBalance}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-2 px-3 py-1">
+              <span aria-hidden className="inline-block w-2 h-2 bg-ink rounded-full" />
+              {truncateAddr(account.address)}
+            </span>
           </button>
         );
       }}

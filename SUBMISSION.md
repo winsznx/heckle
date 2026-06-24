@@ -36,11 +36,11 @@ aren't assets.
 
 | Contract | Address |
 |---|---|
-| HeckleCharacters (ERC-7857 INFT) | `0x…` |
-| HeckleEvents | `0x…` |
-| HeckleTakes (+ reputation) | `0x…` |
+| HeckleCharacters (ERC-7857 INFT) | `0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc` |
+| HeckleEvents | `0x30F9cF192A93C817d152606225a9C3DEC1d1B616` |
+| HeckleTakes (+ reputation) | `0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD` |
 
-Verify on https://chainscan.0g.ai
+Deployed on 0G mainnet (chainId 16661). Verify on https://chainscan.0g.ai
 
 ## Demo proof points (no login needed)
 
