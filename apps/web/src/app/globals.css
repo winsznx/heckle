@@ -35,6 +35,7 @@
 
   --container-content: 1080px;
   --container-prose: 680px;
+  --container-radial: 760px;
 
   --shadow-card: 0 1px 0 0 var(--shadow);
   --shadow-lift: 2px 2px 0 0 var(--ink);

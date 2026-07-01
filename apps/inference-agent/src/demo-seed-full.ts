@@ -61,6 +61,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const force = process.argv.includes("--force");
   const env = requireEnv();
   const provider = new ethers.JsonRpcProvider(env.ZG_RPC_URL);
   const signer = new ethers.Wallet(env.AGENT_PRIVATE_KEY, provider);
@@ -127,8 +128,10 @@ async function main(): Promise<void> {
 
   // 4. Skip take generation if already seeded.
   const rep = await takes.reputationOf(demoTokenId);
-  if (BigInt(rep[0]) >= BigInt(DEMO_EVENT.triggers.length)) {
-    log(`character already has ${rep[0]} takes — already seeded. Done.`);
+  if (!force && BigInt(rep[0]) >= BigInt(DEMO_EVENT.triggers.length)) {
+    log(
+      `character already has ${rep[0]} takes — already seeded. Use --force to regenerate. Done.`,
+    );
     return;
   }
 
@@ -155,22 +158,29 @@ async function main(): Promise<void> {
     });
     const take = await generateTake(broker, choice.provider, choice.model, prompt);
     log(`  take: ${take.text.replace(/\s+/g, " ")}`);
-    log(`  attestation valid=${take.valid} chatId=${take.chatId}`);
+    log(
+      `  attestation valid=${take.attestation?.valid ?? false} signer=${take.attestation?.signer ?? "?"}`,
+    );
 
     const prediction = trigger.kind === "Prediction" ? extractPrediction(take.text) : undefined;
     const blob = {
       text: take.text,
       kind: trigger.kind,
+      characterId: demoTokenId.toString(),
       triggeringEvent: { label: trigger.label, timestamp: trigger.atSeconds },
       ...(prediction ? { prediction } : {}),
-      inferenceAttestation: { signer: choice.provider, valid: take.valid, chatId: take.chatId },
+      inferenceAttestation: take.attestation,
     };
     const { root, uri } = await uploadJson(signer, blob);
     log(`  stored take → ${uri}`);
-    await (
-      await takes.commitTake(demoTokenId, EVENT_ID, root, KIND_TO_ENUM[trigger.kind])
-    ).wait();
-    log("  committed on-chain.");
+    const commitTx = await takes.commitTake(
+      demoTokenId,
+      EVENT_ID,
+      root,
+      KIND_TO_ENUM[trigger.kind],
+    );
+    const committed = await commitTx.wait();
+    log(`  committed: ${committed?.hash ?? commitTx.hash}`);
   }
 
   // 7. Grade the winner prediction (ground truth = North End FC).

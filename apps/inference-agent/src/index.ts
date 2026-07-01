@@ -21,6 +21,7 @@ import {
   getBroker,
   pickProvider,
   prepareProvider,
+  type Attestation,
   type Broker,
   type ProviderChoice,
 } from "./zg-compute.js";
@@ -54,9 +55,10 @@ interface PersonalityBlob {
 interface TakeBlob {
   text: string;
   kind: TakeKind;
+  characterId: string;
   triggeringEvent: { label: string; timestamp: number };
   prediction?: string;
-  inferenceAttestation: { signer: string; valid: boolean; chatId: string };
+  inferenceAttestation: Attestation | null;
 }
 
 function archetypeIdFromIndex(index: number): ArchetypeId {
@@ -139,18 +141,17 @@ async function processTrigger(
     trigger.kind === "Prediction" ? extractPrediction(take.text) : undefined;
 
   log(`    take: ${take.text.replace(/\s+/g, " ")}`);
-  log(`    attestation valid=${take.valid} chatId=${take.chatId}`);
+  log(
+    `    attestation valid=${take.attestation?.valid ?? false} signer=${take.attestation?.signer ?? "?"}`,
+  );
 
   const blob: TakeBlob = {
     text: take.text,
     kind: trigger.kind,
+    characterId: characterId.toString(),
     triggeringEvent: { label: trigger.label, timestamp: trigger.atSeconds },
     ...(prediction ? { prediction } : {}),
-    inferenceAttestation: {
-      signer: choice.provider,
-      valid: take.valid,
-      chatId: take.chatId,
-    },
+    inferenceAttestation: take.attestation,
   };
 
   const { root, uri } = await uploadJson(signer, blob);
@@ -175,6 +176,15 @@ async function processCharacter(
   characterId: bigint,
 ): Promise<void> {
   log(`Processing character #${characterId} ...`);
+
+  // Idempotency: skip characters that already have a full set of takes (e.g. the
+  // pre-seeded demo character), so a restart doesn't duplicate them.
+  const rep = await takes.reputationOf(characterId);
+  if (BigInt(rep[0]) >= BigInt(DEMO_EVENT.triggers.length)) {
+    log(`Character #${characterId} already has ${rep[0]} take(s) — already seeded, skipping.`);
+    return;
+  }
+
   const { record, name, personalityBrief } = await resolvePersonality(
     characters,
     characterId,

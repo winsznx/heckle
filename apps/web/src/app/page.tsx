@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
+import { HashLink } from "@/components/HashLink";
 import { CharacterCard } from "@/components/CharacterCard";
+
+const PUNDIT_TAKE_ROOT =
+  "0xee27109152c63934180319a82f4af4264bd32cab156213f9619f20687d2f62a3";
 
 const STEPS = [
   {
@@ -40,10 +44,52 @@ export default function HomePage() {
           <Link href="/create">
             <Button size="lg">Create your first heckler</Button>
           </Link>
-          <Link href="/events/1">
+          <Link href="/zero-cup">
             <Button size="lg" variant="secondary">
-              See live demo
+              Open the Zero Cup bracket
             </Button>
+          </Link>
+          <Link href="/demovideo">
+            <Button size="lg" variant="secondary">
+              Watch the demo
+            </Button>
+          </Link>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs uppercase tracking-wide opacity-70 pt-2">
+          <span>4 contracts</span>
+          <span className="opacity-40">·</span>
+          <span>48 TEE-attested takes</span>
+          <span className="opacity-40">·</span>
+          <span>3 characters</span>
+          <span className="opacity-40">·</span>
+          <span>On-chain brackets</span>
+        </div>
+      </section>
+
+      <section className="border border-rule bg-ink text-paper p-8 md:p-12 flex flex-col gap-6">
+        <span className="self-start inline-flex items-center border border-paper px-2 py-1 font-mono text-xs uppercase tracking-wide">
+          Live · Zero Cup R32
+        </span>
+        <h2 className="font-display font-black text-3xl md:text-5xl leading-none">
+          The Zero Cup, called by AI.
+        </h2>
+        <p className="font-body text-lg opacity-80 max-w-prose">
+          We made the tournament itself a Heckle event. Three characters — The
+          Pundit, The Hater, The Optimist — each called all 16 R32 matchups: 48
+          TEE-attested predictions, on-chain, with real disagreement on the ties
+          that matter. Build your own bracket on the radial canvas and commit it.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/zero-cup">
+            <Button size="lg" variant="secondary">
+              Open the bracket →
+            </Button>
+          </Link>
+          <Link
+            href="/events/zero-cup-r32"
+            className="self-center font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+          >
+            Or the grid view
           </Link>
         </div>
       </section>
@@ -87,6 +133,12 @@ export default function HomePage() {
             paletteId={1}
             brief="Reads the game through spacing and momentum. Never raises its voice, never misses a tell."
           />
+          <Link
+            href="/characters/0"
+            className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+          >
+            See The Pundit, a real heckler on-chain →
+          </Link>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -99,19 +151,33 @@ export default function HomePage() {
             network exists.
           </p>
           <Card className="p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <Pill>Debate · 34&apos;</Pill>
-              <span className="font-mono text-xs opacity-60">0G Storage</span>
+            <div className="flex items-center justify-between gap-2">
+              <Pill>Prediction · R32 #1</Pill>
+              <Pill tone="filled">Verified ✓</Pill>
             </div>
             <blockquote className="font-display text-2xl font-black leading-tight">
-              &ldquo;Chalked off for an armpit. If that&apos;s offside, so is the
-              concept of momentum. Disgraceful.&rdquo;
+              &ldquo;GoalGhost over Soul, 68% confidence — GoalGhost&rsquo;s demo
+              demonstrated superior stack depth and a more polished,
+              production-ready slice.&rdquo;
             </blockquote>
             <Divider />
-            <span className="font-mono text-xs opacity-60">
-              root 0x9f3a…c0de
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="font-mono text-xs uppercase tracking-wide opacity-40">
+                The Pundit · Analyst — real, on-chain
+              </span>
+              <HashLink
+                type="storage_root"
+                value={PUNDIT_TAKE_ROOT}
+                label="Stored ·"
+              />
+            </div>
           </Card>
+          <Link
+            href="/zero-cup"
+            className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+          >
+            See all 48 predictions →
+          </Link>
         </div>
       </section>
 

@@ -6,7 +6,10 @@ import { WalletPill } from "@/components/WalletPill";
 import { Divider } from "@/components/ui/Divider";
 
 const LINKS = [
+  { href: "/create", label: "Create" },
   { href: "/events/1", label: "Events" },
+  { href: "/zero-cup", label: "Zero Cup" },
+  { href: "/characters", label: "Characters" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/about", label: "About" },
 ] as const;

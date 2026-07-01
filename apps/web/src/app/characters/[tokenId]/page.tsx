@@ -3,19 +3,24 @@
 import { use } from "react";
 import { usePublicClient } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { explorerAddress, archetype } from "@heckle/shared";
+import { archetype } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { TakeCard } from "@/components/TakeCard";
+import { HashLink } from "@/components/HashLink";
 import {
   charactersContract,
   takesContract,
   contractConfigured,
 } from "@/lib/contracts";
 import { archetypeIdFromIndex, reputationIndex } from "@/lib/characters";
-import { fetchBlob, type PersonalityBlob, type TakeBlob } from "@/lib/storage";
-import { truncateAddr } from "@/lib/format";
+import {
+  fetchBlob,
+  hasVerifiedAttestation,
+  type PersonalityBlob,
+  type TakeBlob,
+} from "@/lib/storage";
 
 interface CharacterView {
   name: string;
@@ -36,6 +41,9 @@ interface CharacterView {
     timestamp: bigint;
     takeRoot: `0x${string}`;
     text: string | null;
+    txHash: string;
+    verified: boolean;
+    matchupId: string;
   }[];
   eventsAttended: number;
 }
@@ -79,7 +87,7 @@ export default function CharacterPage({
       let predictionsCorrect = 0;
       let predictionsTotal = 0;
       let votesReceived = 0;
-      const takes: CharacterView["takes"] = [];
+      let takes: CharacterView["takes"] = [];
       const eventSet = new Set<string>();
 
       if (repConfigured) {
@@ -111,34 +119,63 @@ export default function CharacterPage({
           address: takesContract.address,
           event: takesContract.abi[0],
           args: { characterId: id },
-          fromBlock: 0n,
+          fromBlock: 36996000n,
           toBlock: "latest",
         });
 
-        for (const log of logs) {
-          const takeId = log.args.takeId;
-          const kind = log.args.kind;
-          const ts = log.args.timestamp;
-          const root = log.args.takeRoot;
-          const eventId = log.args.eventId;
-          if (
-            typeof takeId !== "bigint" ||
-            typeof kind !== "number" ||
-            typeof ts !== "bigint" ||
-            typeof root !== "string"
-          ) {
-            continue;
-          }
-          if (typeof eventId === "bigint") eventSet.add(eventId.toString());
-          const takeBlob = await fetchBlob<TakeBlob>(root);
-          takes.push({
-            takeId: takeId.toString(),
-            kind,
-            timestamp: ts,
-            takeRoot: root as `0x${string}`,
-            text: takeBlob?.text ?? null,
-          });
+        // Fetch every take blob concurrently — sequential awaits made this the
+        // slowest page (one network round-trip per take).
+        const resolved = await Promise.all(
+          logs.map(async (log) => {
+            const takeId = log.args.takeId;
+            const kind = log.args.kind;
+            const ts = log.args.timestamp;
+            const root = log.args.takeRoot;
+            const eventId = log.args.eventId;
+            if (
+              typeof takeId !== "bigint" ||
+              typeof kind !== "number" ||
+              typeof ts !== "bigint" ||
+              typeof root !== "string"
+            ) {
+              return null;
+            }
+            const takeBlob = await fetchBlob<TakeBlob>(root);
+            // Only surface takes from the verified pipeline; legacy blobs are orphaned.
+            if (!hasVerifiedAttestation(takeBlob)) return null;
+            return {
+              eventId: typeof eventId === "bigint" ? eventId.toString() : null,
+              row: {
+                takeId: takeId.toString(),
+                kind,
+                timestamp: ts,
+                takeRoot: root as `0x${string}`,
+                text: takeBlob?.text ?? null,
+                txHash: log.transactionHash ?? "",
+                verified: takeBlob?.inferenceAttestation?.valid === true,
+                matchupId:
+                  typeof takeBlob?.matchupId === "string" ? takeBlob.matchupId : "",
+              },
+            };
+          }),
+        );
+
+        for (const r of resolved) {
+          if (!r) continue;
+          if (r.eventId) eventSet.add(r.eventId);
+          takes.push(r.row);
         }
+
+        // Keep only the latest take per matchup — clean regenerations supersede
+        // earlier ones on the append-only contract. Takes without a matchupId
+        // (e.g. group-stage reactions) are one-per-trigger and kept as-is.
+        const latestByKey = new Map<string, (typeof takes)[number]>();
+        for (const t of takes) {
+          const key = t.matchupId ? `m:${t.matchupId}` : `t:${t.takeId}`;
+          const prev = latestByKey.get(key);
+          if (!prev || BigInt(t.takeId) > BigInt(prev.takeId)) latestByKey.set(key, t);
+        }
+        takes = [...latestByKey.values()];
         takes.sort((a, b) => Number(a.timestamp - b.timestamp));
       }
 
@@ -202,14 +239,7 @@ export default function CharacterPage({
         </h1>
         <p className="font-mono text-sm opacity-70">@{data.handle}</p>
         <div className="flex flex-wrap items-center gap-4">
-          <a
-            href={explorerAddress(charactersContract.address)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-xs opacity-70 hover:opacity-100"
-          >
-            Owner {truncateAddr(data.owner)} · chainscan
-          </a>
+          <HashLink type="address" value={data.owner} label="Owner" />
           <span className="font-mono text-xs opacity-70">
             Reputation {data.reputationIndex}
           </span>
@@ -230,7 +260,7 @@ export default function CharacterPage({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule">
           {[
             { label: "Events", value: data.eventsAttended },
-            { label: "Takes", value: data.takesGenerated },
+            { label: "Takes", value: data.takes.length },
             {
               label: "Predictions",
               value: `${data.predictionsCorrect}/${data.predictionsTotal}`,
@@ -267,6 +297,11 @@ export default function CharacterPage({
                 kind={take.kind}
                 timestamp={take.timestamp}
                 takeRoot={take.takeRoot}
+                txHash={take.txHash}
+                verified={take.verified}
+                characterId={tokenId}
+                characterName={data.name}
+                archetypeLabel={arch.label}
               />
             ))}
           </div>

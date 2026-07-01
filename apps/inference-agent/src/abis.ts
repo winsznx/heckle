@@ -1,6 +1,6 @@
 /**
  * Minimal human-readable ABIs for the Heckle contracts the agent touches.
- * Only the functions/events the off-chain agent + seed script call are listed.
+ * Only the functions/events the off-chain agent + seed scripts call are listed.
  */
 
 export const HECKLE_EVENTS_ABI = [
@@ -8,6 +8,7 @@ export const HECKLE_EVENTS_ABI = [
   "event EventRegistered(uint256 indexed eventId, bytes32 eventRoot, uint64 startsAt, uint64 endsAt, address indexed curator)",
   "event StatusChanged(uint256 indexed eventId, uint8 status)",
   "function attachmentsOf(uint256 eventId) view returns (uint256[])",
+  "function eventOf(uint256 eventId) view returns (tuple(bytes32 eventRoot, uint64 startsAt, uint64 endsAt, uint8 status, address curator))",
   "function registerEvent(bytes32 eventRoot, uint64 startsAt, uint64 endsAt) returns (uint256 eventId)",
   "function setStatus(uint256 eventId, uint8 status)",
   "function attachCharacter(uint256 eventId, uint256 characterId)",
@@ -15,8 +16,9 @@ export const HECKLE_EVENTS_ABI = [
 
 export const HECKLE_CHARACTERS_ABI = [
   "event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 personalityRoot)",
-  "function characterOf(uint256 tokenId) view returns (uint8 archetype, string handle, bytes32 personalityRoot, address creator, uint64 createdAt)",
+  "function characterOf(uint256 tokenId) view returns (tuple(uint8 archetype, string handle, bytes32 personalityRoot, address creator, uint64 createdAt))",
   "function tokenURI(uint256 tokenId) view returns (string)",
+  "function totalMinted() view returns (uint256)",
   "function mint(string tokenURI_, uint8 archetype, string handle, bytes32 personalityRoot) returns (uint256 tokenId)",
 ] as const;
 
@@ -25,4 +27,14 @@ export const HECKLE_TAKES_ABI = [
   "event PredictionGraded(uint256 indexed characterId, bool correct, uint256 weightedScore)",
   "function commitTake(uint256 characterId, uint256 eventId, bytes32 takeRoot, uint8 kind) returns (uint256 takeId)",
   "function gradePrediction(uint256 characterId, bool correct)",
+  "function reputationOf(uint256 characterId) view returns (tuple(uint64 takesGenerated, uint64 votesReceived, uint64 predictionsCorrect, uint64 predictionsTotal, uint256 weightedScore, uint64 firstTakeAt, uint64 lastTakeAt))",
+] as const;
+
+export const HECKLE_BRACKETS_ABI = [
+  "event BracketCommitted(uint256 indexed bracketId, uint256 indexed eventId, address indexed submitter, bytes32 predictionsRoot, uint64 timestamp)",
+  "function commitBracket(uint256 eventId, bytes32 predictionsRoot) returns (uint256 bracketId)",
+  "function bracketsByEvent(uint256 eventId) view returns (uint256[])",
+  "function bracketsBySubmitter(address submitter) view returns (uint256[])",
+  "function bracketOf(uint256 bracketId) view returns (tuple(uint256 eventId, address submitter, bytes32 predictionsRoot, uint64 timestamp))",
+  "function totalBrackets() view returns (uint256)",
 ] as const;

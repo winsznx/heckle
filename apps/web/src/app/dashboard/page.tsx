@@ -42,7 +42,7 @@ function DashboardInner() {
         address: charactersContract.address,
         event: charactersContract.abi[0],
         args: { owner: address },
-        fromBlock: 0n,
+        fromBlock: 36996000n,
         toBlock: "latest",
       });
 

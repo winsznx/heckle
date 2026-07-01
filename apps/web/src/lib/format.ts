@@ -1,3 +1,10 @@
+/** 2-letter ISO code → regional-indicator flag emoji. Empty for bad input. */
+export function flagEmoji(code: string): string {
+  if (!/^[A-Za-z]{2}$/.test(code)) return "";
+  const cps = [...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...cps);
+}
+
 export function truncateAddr(addr: string, lead = 6, tail = 4): string {
   if (!addr) return "";
   if (addr.length <= lead + tail + 2) return addr;

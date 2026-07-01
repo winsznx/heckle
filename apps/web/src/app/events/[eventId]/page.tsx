@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { use, useState } from "react";
 import {
   useAccount,
@@ -7,7 +8,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { DEMO_EVENT } from "@heckle/shared";
+import { DEMO_EVENT, archetype } from "@heckle/shared";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
@@ -19,7 +20,13 @@ import {
   takesContract,
   contractConfigured,
 } from "@/lib/contracts";
-import { fetchBlob, type PersonalityBlob, type TakeBlob } from "@/lib/storage";
+import {
+  fetchBlob,
+  hasVerifiedAttestation,
+  type PersonalityBlob,
+  type TakeBlob,
+} from "@/lib/storage";
+import { archetypeIdFromIndex } from "@/lib/characters";
 
 interface OwnedOption {
   tokenId: bigint;
@@ -35,6 +42,10 @@ interface LiveTake {
   takeRoot: `0x${string}`;
   text: string | null;
   triggerId: string | null;
+  txHash: string;
+  verified: boolean;
+  characterName?: string;
+  archetypeLabel?: string;
 }
 
 function AttachPanel({ eventId }: { eventId: bigint }) {
@@ -62,7 +73,7 @@ function AttachPanel({ eventId }: { eventId: bigint }) {
         address: charactersContract.address,
         event: charactersContract.abi[0],
         args: { owner: address },
-        fromBlock: 0n,
+        fromBlock: 36996000n,
         toBlock: "latest",
       });
       const ids = Array.from(
@@ -180,6 +191,67 @@ function AttachPanel({ eventId }: { eventId: bigint }) {
   );
 }
 
+function AttachedHecklers({ eventId }: { eventId: bigint }) {
+  const publicClient = usePublicClient();
+  const configured =
+    contractConfigured(charactersContract.address) &&
+    contractConfigured(eventsContract.address);
+
+  const { data: hecklers } = useQuery({
+    queryKey: ["event-hecklers", eventId.toString()],
+    enabled: Boolean(publicClient) && configured,
+    refetchInterval: 8000,
+    queryFn: async (): Promise<OwnedOption[]> => {
+      if (!publicClient) return [];
+      const ids = await publicClient.readContract({
+        address: eventsContract.address,
+        abi: eventsContract.abi,
+        functionName: "attachmentsOf",
+        args: [eventId],
+      });
+      return Promise.all(
+        ids.map(async (tokenId) => {
+          const meta = await publicClient.readContract({
+            address: charactersContract.address,
+            abi: charactersContract.abi,
+            functionName: "characterOf",
+            args: [tokenId],
+          });
+          const blob = await fetchBlob<PersonalityBlob>(meta.personalityRoot);
+          return {
+            tokenId,
+            name: blob?.name ?? `Heckler #${tokenId.toString()}`,
+            handle: meta.handle,
+          };
+        }),
+      );
+    },
+  });
+
+  if (!hecklers || hecklers.length === 0) return null;
+
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="font-display text-2xl font-black">Hecklers in this match</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {hecklers.map((h) => (
+          <Link key={h.tokenId.toString()} href={`/characters/${h.tokenId}`}>
+            <Card className="p-5 flex flex-col gap-2 transition-transform hover:-translate-y-px">
+              <span className="font-display text-xl font-black">{h.name}</span>
+              <span className="font-mono text-xs opacity-60">
+                @{h.handle} · #{h.tokenId.toString()}
+              </span>
+              <span className="font-mono text-xs uppercase opacity-60">
+                View profile →
+              </span>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function LiveTimeline({ eventId }: { eventId: bigint }) {
   const publicClient = usePublicClient();
   const configured = contractConfigured(takesContract.address);
@@ -194,7 +266,7 @@ function LiveTimeline({ eventId }: { eventId: bigint }) {
         address: takesContract.address,
         event: takesContract.abi[0],
         args: { eventId },
-        fromBlock: 0n,
+        fromBlock: 36996000n,
         toBlock: "latest",
       });
 
@@ -215,6 +287,8 @@ function LiveTimeline({ eventId }: { eventId: bigint }) {
             return null;
           }
           const blob = await fetchBlob<TakeBlob>(root);
+          // Only surface verified-pipeline takes; legacy blobs are orphaned.
+          if (!hasVerifiedAttestation(blob)) return null;
           return {
             takeId: takeId.toString(),
             characterId: characterId.toString(),
@@ -223,13 +297,46 @@ function LiveTimeline({ eventId }: { eventId: bigint }) {
             takeRoot: root as `0x${string}`,
             text: blob?.text ?? null,
             triggerId: typeof blob?.triggerId === "string" ? blob.triggerId : null,
-          };
+            txHash: String(log.transactionHash ?? ""),
+            verified: blob?.inferenceAttestation?.valid === true,
+          } satisfies LiveTake;
         }),
       );
 
-      return out
+      const valid = out
         .filter((t): t is LiveTake => t !== null)
         .sort((a, b) => Number(a.timestamp - b.timestamp));
+
+      // Attach character name + archetype — one lookup per unique character.
+      const ids = Array.from(new Set(valid.map((t) => t.characterId)));
+      const charMap = new Map<string, { name: string; archetypeLabel: string }>();
+      await Promise.all(
+        ids.map(async (cid) => {
+          try {
+            const meta = await publicClient.readContract({
+              address: charactersContract.address,
+              abi: charactersContract.abi,
+              functionName: "characterOf",
+              args: [BigInt(cid)],
+            });
+            const pblob = await fetchBlob<PersonalityBlob>(meta.personalityRoot);
+            charMap.set(cid, {
+              name: pblob?.name ?? `Heckler #${cid}`,
+              archetypeLabel: archetype(archetypeIdFromIndex(meta.archetype)).label,
+            });
+          } catch {
+            /* skip unresolved characters */
+          }
+        }),
+      );
+      for (const t of valid) {
+        const c = charMap.get(t.characterId);
+        if (c) {
+          t.characterName = c.name;
+          t.archetypeLabel = c.archetypeLabel;
+        }
+      }
+      return valid;
     },
   });
 
@@ -259,6 +366,11 @@ function LiveTimeline({ eventId }: { eventId: bigint }) {
                     kind={take.kind}
                     timestamp={take.timestamp}
                     takeRoot={take.takeRoot}
+                    txHash={take.txHash}
+                    verified={take.verified}
+                    characterId={take.characterId}
+                    characterName={take.characterName}
+                    archetypeLabel={take.archetypeLabel}
                   />
                 ))}
               </div>
@@ -294,7 +406,11 @@ function LiveTimeline({ eventId }: { eventId: bigint }) {
                 kind={take.kind}
                 timestamp={take.timestamp}
                 takeRoot={take.takeRoot}
-                triggerLabel={`Heckler #${take.characterId}`}
+                txHash={take.txHash}
+                verified={take.verified}
+                characterId={take.characterId}
+                characterName={take.characterName}
+                archetypeLabel={take.archetypeLabel}
               />
             ))}
           </div>
@@ -331,6 +447,8 @@ export default function EventPage({
           {DEMO_EVENT.description}
         </p>
       </header>
+
+      <AttachedHecklers eventId={id} />
 
       <AttachPanel eventId={id} />
 

@@ -182,3 +182,67 @@ export const heckleTakesAbi = [
     ],
   },
 ] as const;
+
+export const heckleBracketsAbi = [
+  {
+    type: "event",
+    name: "BracketCommitted",
+    inputs: [
+      { name: "bracketId", type: "uint256", indexed: true },
+      { name: "eventId", type: "uint256", indexed: true },
+      { name: "submitter", type: "address", indexed: true },
+      { name: "predictionsRoot", type: "bytes32", indexed: false },
+      { name: "timestamp", type: "uint64", indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "function",
+    name: "commitBracket",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "eventId", type: "uint256" },
+      { name: "predictionsRoot", type: "bytes32" },
+    ],
+    outputs: [{ name: "bracketId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "bracketsByEvent",
+    stateMutability: "view",
+    inputs: [{ name: "eventId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    type: "function",
+    name: "bracketsBySubmitter",
+    stateMutability: "view",
+    inputs: [{ name: "submitter", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    type: "function",
+    name: "bracketOf",
+    stateMutability: "view",
+    inputs: [{ name: "bracketId", type: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "eventId", type: "uint256" },
+          { name: "submitter", type: "address" },
+          { name: "predictionsRoot", type: "bytes32" },
+          { name: "timestamp", type: "uint64" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "totalBrackets",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
