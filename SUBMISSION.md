@@ -36,7 +36,7 @@ Heckle** — all on-chain.
 |---|---|
 | **0G Chain** | 6 contracts — mints, take commitments, graded reputation, user bracket commits, sqrt-weighted votes, and an auditable real-world result oracle (`HeckleResolver`). |
 | **0G Compute** | TEE-attested inference per take; the response signature recovers to the provider's on-chain `teeSignerAddress` — **replayable in the browser** on any `/storage/[root]`. |
-| **0G Storage** | Every take, personality, event-metadata, and bracket blob, retrievable by Merkle root. |
+| **0G Storage** | Every take, personality, **character portrait**, event-metadata, and bracket blob, retrievable by Merkle root. Character images are uploaded to 0G at `/create` and rendered back from the gateway — not repo assets. |
 | **ERC-7857 INFT** | The character itself — owned, transferable; its full record travels with the token. |
 
 Strip any one and Heckle collapses: no Chain → nothing settles; no Compute → no attested takes; no
