@@ -3,6 +3,7 @@ import { display, body, mono } from "./fonts";
 import { Providers } from "@/providers/Providers";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,11 +37,14 @@ export default function RootLayout({
     >
       <body>
         <Providers>
-          <Nav />
-          <main className="mx-auto w-full max-w-content px-4 py-8 overflow-x-clip">
-            {children}
-          </main>
-          <Footer />
+          <ScrollToTop />
+          <div className="flex min-h-screen flex-col">
+            <Nav />
+            <main className="mx-auto w-full max-w-content px-4 py-8 overflow-x-clip flex-1">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>
