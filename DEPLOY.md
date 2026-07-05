@@ -92,3 +92,29 @@ pnpm --filter @heckle/web dev      # http://localhost:3000
 ```
 
 Vercel deploy (Phase 11) needs your Vercel auth + domain — see `SUBMISSION.md`.
+
+---
+
+## 9. World Cup resolution (HeckleResolver)
+
+Live 2026 WC knockout results feed `HeckleResolver`, so a character's Proof of Take is scored against
+an on-chain record. Needs `FOOTBALL_DATA_TOKEN` (free at football-data.org); the resolver wallet is the
+deployer (= `AGENT_PRIVATE_KEY`).
+
+**Seed the calls** — `wc-real` has The Pundit predict every upcoming knockout before kickoff:
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/wc-real.ts --confirm
+```
+
+**Autonomous resolution** — the resolver "does it itself". Cron this (Railway cron or any scheduler).
+Each run settles newly-finished results on-chain (write-once → re-runs are free) and grades the
+matches it just finalized, once. Keep the interval well above a run's duration so runs never overlap:
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/wc-auto.ts --confirm
+```
+
+**Manual resolution** — no cron required. Anyone can `POST /api/worldcup/resolve` (the "Resolve results
+on-chain" button on `/events/world-cup`); it settles any finished-but-unsettled result, idempotently,
+behind a short cooldown. Not a prediction market — no stakes, it only writes the true outcome.

@@ -112,18 +112,42 @@ export function parseWcMatchesResponse(data: unknown): WcFixture[] {
   return matches.map(normalizeMatch);
 }
 
-/** Direct fetch for the inference agent (Node). The web app uses its own route
- *  so it can attach Next's revalidate caching. */
+export interface WcFeedResult {
+  fixtures: WcFixture[];
+  /** football-data.org throttling headroom this minute (null if not reported). */
+  requestsRemaining: number | null;
+}
+
+/**
+ * Direct fetch for the inference agent (Node) that surfaces the rate-limit
+ * headroom. football-data.org throttles the free tier hard (~10 req/min); the
+ * `X-Requests-Available-Minute` header tells us how much is left so callers can
+ * back off before they get blocked. The web app uses its own route (with Next
+ * revalidate caching) rather than this.
+ */
+export async function fetchWcFixturesMeta(
+  token: string,
+  season: number = WC_SEASON,
+): Promise<WcFeedResult> {
+  const res = await fetch(buildWcMatchesUrl(season), {
+    headers: { "X-Auth-Token": token },
+  });
+  const header = res.headers.get("X-Requests-Available-Minute");
+  const requestsRemaining = header !== null && header !== "" ? Number(header) : null;
+  if (!res.ok) throw new Error(`football-data ${res.status}`);
+  const data = (await res.json()) as { matches?: RawMatch[] };
+  return {
+    fixtures: (data.matches ?? []).map(normalizeMatch),
+    requestsRemaining: Number.isFinite(requestsRemaining) ? requestsRemaining : null,
+  };
+}
+
+/** Convenience wrapper when the rate-limit headroom isn't needed. */
 export async function fetchWcFixtures(
   token: string,
   season: number = WC_SEASON,
 ): Promise<WcFixture[]> {
-  const res = await fetch(buildWcMatchesUrl(season), {
-    headers: { "X-Auth-Token": token },
-  });
-  if (!res.ok) throw new Error(`football-data ${res.status}`);
-  const data = (await res.json()) as { matches?: RawMatch[] };
-  return (data.matches ?? []).map(normalizeMatch);
+  return (await fetchWcFixturesMeta(token, season)).fixtures;
 }
 
 /** Upcoming knockout fixtures with known teams — the ones a character can call. */

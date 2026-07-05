@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   WORLD_CUP_EVENT_ID,
   stageLabel,
@@ -47,6 +49,54 @@ function gradeTake(f: WcFixture, prediction: string | null): "correct" | "wrong"
   return prediction.trim().toLowerCase() === w.trim().toLowerCase()
     ? "correct"
     : "wrong";
+}
+
+function ResolveButton() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function run() {
+    setStatus("loading");
+    setMsg("");
+    try {
+      const res = await fetch("/api/worldcup/resolve", { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) {
+        setStatus("error");
+        setMsg(data.error === "unconfigured" ? "resolver offline" : "couldn't reach the feed");
+        return;
+      }
+      const n = data.settled?.length ?? 0;
+      setStatus("done");
+      setMsg(
+        n > 0
+          ? `Settled ${n} result${n === 1 ? "" : "s"} on-chain`
+          : data.cooldown
+            ? "just ran — try again shortly"
+            : "all results already settled",
+      );
+      qc.invalidateQueries({ queryKey: ["resolver-results"] });
+      qc.invalidateQueries({ queryKey: ["worldcup"] });
+    } catch {
+      setStatus("error");
+      setMsg("network error");
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-3">
+      <button
+        type="button"
+        onClick={run}
+        disabled={status === "loading"}
+        className="inline-flex items-center gap-2 border border-rule bg-ink text-paper px-4 py-2 font-mono text-xs uppercase tracking-wide hover:-translate-y-px transition-transform disabled:opacity-50"
+      >
+        {status === "loading" ? "Resolving…" : "Resolve results on-chain"}
+      </button>
+      {msg ? <span className="font-mono text-xs opacity-60">{msg}</span> : null}
+    </span>
+  );
 }
 
 function TeamRow({ name, tla, score }: { name: string; tla: string | null; score?: number | null }) {
@@ -211,12 +261,18 @@ export default function WorldCupPage() {
           </a>{" "}
           and scored against reality. Same loop as Zero Cup — on live sport.
         </p>
-        <Link
-          href="/zero-cup"
-          className="self-start inline-flex items-center gap-2 border border-rule bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wide hover:bg-whisper transition-colors"
-        >
-          Back to the Zero Cup bracket
-        </Link>
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          <Link
+            href="/zero-cup"
+            className="inline-flex items-center gap-2 border border-rule bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wide hover:bg-whisper transition-colors"
+          >
+            Back to the Zero Cup bracket
+          </Link>
+          <ResolveButton />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-wide opacity-50">
+          Results settle autonomously as matches finish — or anyone can trigger it. No stakes, no payouts; it just writes the true outcome so a call can be scored.
+        </p>
       </header>
 
       <Divider />

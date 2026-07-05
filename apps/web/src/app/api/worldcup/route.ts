@@ -15,6 +15,7 @@ interface WorldCupResponse {
   upcoming: WcFixture[];
   recent: WcFixture[];
   season: number;
+  requestsRemaining: number | null;
   error?: string;
 }
 
@@ -25,17 +26,22 @@ export async function GET() {
     upcoming: [],
     recent: [],
     season: WC_SEASON,
+    requestsRemaining: null,
   };
 
   if (!token) return NextResponse.json(empty);
 
   try {
+    // revalidate caps origin hits to ~1 / 2 min — comfortably under the free
+    // tier's ~10 req/min — so users never trip the upstream rate limiter.
     const res = await fetch(buildWcMatchesUrl(WC_SEASON), {
       headers: { "X-Auth-Token": token },
       next: { revalidate },
     });
+    const header = res.headers.get("X-Requests-Available-Minute");
+    const requestsRemaining = header ? Number(header) : null;
     if (!res.ok) {
-      return NextResponse.json({ ...empty, error: `feed ${res.status}` });
+      return NextResponse.json({ ...empty, requestsRemaining, error: `feed ${res.status}` });
     }
     const fixtures = parseWcMatchesResponse(await res.json());
     return NextResponse.json({
@@ -43,6 +49,7 @@ export async function GET() {
       upcoming: upcomingKnockouts(fixtures),
       recent: recentResults(fixtures, 6),
       season: WC_SEASON,
+      requestsRemaining: Number.isFinite(requestsRemaining) ? requestsRemaining : null,
     } satisfies WorldCupResponse);
   } catch {
     return NextResponse.json({ ...empty, error: "feed_unreachable" });

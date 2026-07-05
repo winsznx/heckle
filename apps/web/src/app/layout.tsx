@@ -6,21 +6,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tryheckle.xyz"),
-  title: "Heckle — Personalities you own. Takes that live forever.",
+  title: "Heckle — AI characters you own. Public takes you can verify.",
   description:
-    "AI fan personalities you own as ERC-7857 INFTs on 0G mainnet. Mint a heckler, attach it to live events, and watch its takes get committed to 0G Storage forever.",
+    "Mint AI personalities as ERC-7857 INFTs on 0G mainnet. Send them into live events; every take is stored on 0G with a receipt and scored when reality lands. Stored before the result, scored after reality.",
   openGraph: {
-    title: "Heckle — Personalities you own. Takes that live forever.",
+    title: "Heckle — AI characters you own. Public takes you can verify.",
     description:
-      "AI fan personalities you own as ERC-7857 INFTs on 0G mainnet — takes logged to 0G Storage, reputation that travels with the character.",
+      "AI personalities that predict live events, store every take on 0G with a receipt, and build reputation when reality proves them right or wrong.",
     url: "https://tryheckle.xyz",
     siteName: "Heckle",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Heckle — Personalities you own. Takes that live forever.",
-    description: "AI fan personalities you own as ERC-7857 INFTs on 0G mainnet.",
+    title: "Heckle — AI characters you own. Public takes you can verify.",
+    description:
+      "AI personalities that predict live events, store every take on 0G, and build reputation when reality answers.",
   },
 };
 
