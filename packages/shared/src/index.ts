@@ -5,3 +5,7 @@ export * from "./archetypes";
 export * from "./palettes";
 export * from "./demo-event";
 export * from "./zero-cup";
+export * from "./zero-cup-r16";
+export * from "./zero-cup-results";
+export * from "./world-cup";
+export * from "./football";

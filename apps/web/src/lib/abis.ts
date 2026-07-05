@@ -69,6 +69,17 @@ export const heckleCharactersAbi = [
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
   },
+  {
+    type: "function",
+    name: "safeTransferFrom",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 export const heckleEventsAbi = [
@@ -244,5 +255,102 @@ export const heckleBracketsAbi = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+export const heckleVotesAbi = [
+  {
+    type: "event",
+    name: "TakeVoted",
+    inputs: [
+      { name: "takeId", type: "uint256", indexed: true },
+      { name: "voterCharacterId", type: "uint256", indexed: true },
+      { name: "voter", type: "address", indexed: true },
+      { name: "weight", type: "uint256", indexed: false },
+      { name: "newTotal", type: "uint256", indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "function",
+    name: "voteTake",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "takeId", type: "uint256" },
+      { name: "voterCharacterId", type: "uint256" },
+    ],
+    outputs: [{ name: "weight", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "votesOf",
+    stateMutability: "view",
+    inputs: [{ name: "takeId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "hasVoted",
+    stateMutability: "view",
+    inputs: [
+      { name: "takeId", type: "uint256" },
+      { name: "voterCharacterId", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+export const heckleResolverAbi = [
+  {
+    type: "event",
+    name: "Resolved",
+    inputs: [
+      { name: "matchId", type: "uint256", indexed: true },
+      { name: "outcome", type: "uint8", indexed: false },
+      { name: "homeScore", type: "uint16", indexed: false },
+      { name: "awayScore", type: "uint16", indexed: false },
+      { name: "finalized", type: "bool", indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "function",
+    name: "results",
+    stateMutability: "view",
+    inputs: [{ name: "matchId", type: "uint256" }],
+    outputs: [
+      { name: "outcome", type: "uint8" },
+      { name: "homeScore", type: "uint16" },
+      { name: "awayScore", type: "uint16" },
+      { name: "resolvedAt", type: "uint64" },
+      { name: "finalized", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "grade",
+    stateMutability: "view",
+    inputs: [
+      { name: "matchId", type: "uint256" },
+      { name: "predictedOutcome", type: "uint8" },
+    ],
+    outputs: [
+      { name: "graded", type: "bool" },
+      { name: "correct", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "isFinalized",
+    stateMutability: "view",
+    inputs: [{ name: "matchId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "resolver",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
   },
 ] as const;

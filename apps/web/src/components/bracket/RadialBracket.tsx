@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  BRACKET_NODES,
-  BRACKET_BY_ID,
-  R32_NODES,
-  VIEWBOX,
-  type BracketNode,
-} from "@/lib/bracket-data";
+import { useMemo } from "react";
+import { VIEWBOX, type BracketDef, type BracketNode } from "@/lib/bracket-data";
 import { type Picks } from "@/lib/bracket-state";
 import { polar, toPercent } from "@/lib/polar";
 import { flagEmoji } from "@/lib/format";
@@ -24,8 +19,8 @@ interface Child {
 }
 
 /** The two entrants feeding a node, with whether each advanced past it. */
-function childrenOf(parent: BracketNode, picks: Picks): Child[] {
-  if (parent.round === "R32" && parent.contestants) {
+function childrenOf(parent: BracketNode, picks: Picks, def: BracketDef): Child[] {
+  if (parent.contestants) {
     return parent.contestants.map((c) => ({
       center: c.center,
       angle: c.angle,
@@ -34,7 +29,7 @@ function childrenOf(parent: BracketNode, picks: Picks): Child[] {
   }
   const [f1, f2] = parent.feeders ?? ["", ""];
   return [f1, f2].map((fid) => {
-    const f = BRACKET_BY_ID.get(fid);
+    const f = def.byId.get(fid);
     return {
       center: f?.center ?? { x: CENTER, y: CENTER },
       angle: f?.angle ?? 0,
@@ -50,9 +45,8 @@ function connectorPath(parent: BracketNode, child: Child): string {
   return `M ${sx} ${sy} L ${m.x} ${m.y} L ${parent.center.x} ${parent.center.y}`;
 }
 
-const INNER_NODES = BRACKET_NODES.filter((n) => n.round !== "R32");
-
 interface RadialBracketProps {
+  def: BracketDef;
   picks: Picks;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -61,13 +55,18 @@ interface RadialBracketProps {
 }
 
 export function RadialBracket({
+  def,
   picks,
   selectedId,
   onSelect,
   onPick,
   takeCount,
 }: RadialBracketProps) {
-  const champion = picks["F_1"];
+  const champion = picks[def.finalId];
+  const innerNodes = useMemo(
+    () => def.nodes.filter((n) => n.round !== def.outerRound),
+    [def],
+  );
 
   return (
     <div className="w-full max-w-radial mx-auto">
@@ -78,8 +77,8 @@ export function RadialBracket({
           aria-hidden="true"
         >
           {/* Base + active connectors. Dim until a pick advances along the path. */}
-          {BRACKET_NODES.flatMap((parent) =>
-            childrenOf(parent, picks).map((child, i) => (
+          {def.nodes.flatMap((parent) =>
+            childrenOf(parent, picks, def).map((child, i) => (
               <path
                 key={`${parent.id}-${i}`}
                 d={connectorPath(parent, child)}
@@ -96,16 +95,18 @@ export function RadialBracket({
           )}
 
           {/* Join dots for the inner rounds. */}
-          {INNER_NODES.filter((n) => n.round !== "Final").map((node) => (
-            <circle
-              key={`dot-${node.id}`}
-              cx={node.center.x}
-              cy={node.center.y}
-              r={picks[node.id] ? 5 : 3.5}
-              className={picks[node.id] ? "fill-ink stroke-ink" : "fill-paper stroke-ink opacity-30"}
-              strokeWidth={1.5}
-            />
-          ))}
+          {innerNodes
+            .filter((n) => n.round !== "Final")
+            .map((node) => (
+              <circle
+                key={`dot-${node.id}`}
+                cx={node.center.x}
+                cy={node.center.y}
+                r={picks[node.id] ? 5 : 3.5}
+                className={picks[node.id] ? "fill-ink stroke-ink" : "fill-paper stroke-ink opacity-30"}
+                strokeWidth={1.5}
+              />
+            ))}
 
           {/* Center trophy. */}
           <g
@@ -123,8 +124,8 @@ export function RadialBracket({
         </svg>
 
         <div className="absolute inset-0">
-          {/* 32 project circles. */}
-          {R32_NODES.flatMap((node) => {
+          {/* Project circles. */}
+          {def.outerNodes.flatMap((node) => {
             const selected = selectedId === node.id;
             return (node.contestants ?? []).map((c) => {
               const picked = picks[node.id] === c.name;
@@ -166,13 +167,11 @@ export function RadialBracket({
           })}
 
           {/* Inner-round winner labels + the champion under the trophy. */}
-          {INNER_NODES.map((node) => {
+          {innerNodes.map((node) => {
             const winner = picks[node.id];
             if (!winner) return null;
             const isFinal = node.round === "Final";
-            const anchor = isFinal
-              ? { x: CENTER, y: CENTER + 34 }
-              : node.center;
+            const anchor = isFinal ? { x: CENTER, y: CENTER + 34 } : node.center;
             const pos = toPercent(anchor, VIEWBOX);
             return (
               <button
@@ -188,7 +187,7 @@ export function RadialBracket({
           })}
 
           {/* Selectable hit-target on each matchup's join point (opens takes). */}
-          {R32_NODES.map((node) => {
+          {def.outerNodes.map((node) => {
             const pos = toPercent(node.center, VIEWBOX);
             const count = takeCount(node.matchupId ?? node.id);
             return (

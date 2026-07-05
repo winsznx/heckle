@@ -35,7 +35,9 @@ export default function RootLayout({
       <body>
         <Providers>
           <Nav />
-          <main className="mx-auto max-w-content px-4 py-8">{children}</main>
+          <main className="mx-auto w-full max-w-content px-4 py-8 overflow-x-clip">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

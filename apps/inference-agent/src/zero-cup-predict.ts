@@ -2,6 +2,7 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import {
   ZERO_CUP_R32,
+  ZERO_CUP_R16_MATCHUPS,
   ZERO_CUP_R32_EVENT_ID,
   ARCHETYPE_IDS,
   archetype,
@@ -98,6 +99,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   const force = process.argv.includes("--force");
+  const round = process.argv.includes("--r16") ? "r16" : "r32";
+  const matchups = round === "r16" ? ZERO_CUP_R16_MATCHUPS : ZERO_CUP_R32.matchups;
+  log(`round: ${round} (${matchups.length} matchups)`);
   const env = requireEnv();
   const provider = new ethers.JsonRpcProvider(env.ZG_RPC_URL);
   const signer = new ethers.Wallet(env.AGENT_PRIVATE_KEY, provider);
@@ -207,7 +211,7 @@ async function main(): Promise<void> {
   let skipped = 0;
   let failed = 0;
   for (const c of roster) {
-    for (const m of ZERO_CUP_R32.matchups) {
+    for (const m of matchups) {
       if (!force && done.has(`${c.id}:${m.id}`)) {
         skipped++;
         continue;

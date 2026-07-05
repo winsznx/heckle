@@ -7,6 +7,7 @@ import { archetype } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
+import { CharacterPortrait, hasPortrait } from "@/components/CharacterPortrait";
 import {
   charactersContract,
   takesContract,
@@ -33,34 +34,58 @@ function CharacterTile({
   featured?: boolean;
 }) {
   const arch = archetype(archetypeIdFromIndex(c.archetype));
+  const portrait = hasPortrait(c.tokenId);
   return (
     <Link href={`/characters/${c.tokenId}`} className="block">
       <Card
-        className={`flex flex-col gap-3 transition-transform hover:-translate-y-px ${
-          featured ? "p-8" : "p-5"
+        className={`overflow-hidden flex transition-transform hover:-translate-y-px ${
+          featured ? "flex-col sm:flex-row" : "flex-col"
         }`}
       >
-        <div className="flex items-center justify-between">
-          <Pill tone="filled">{arch.label}</Pill>
-          {featured ? (
-            <span className="font-mono text-xs uppercase tracking-wide opacity-60">
-              Featured
-            </span>
-          ) : (
-            <span className="font-mono text-xs opacity-50">#{c.tokenId}</span>
-          )}
-        </div>
-        <h3
-          className={`font-display font-black leading-none ${
-            featured ? "text-4xl" : "text-2xl"
+        {portrait ? (
+          <div
+            className={`bg-whisper shrink-0 ${
+              featured
+                ? "border-b sm:border-b-0 sm:border-r border-rule sm:w-56"
+                : "border-b border-rule"
+            }`}
+          >
+            <CharacterPortrait
+              tokenId={c.tokenId}
+              name={c.name}
+              className={`w-full grayscale ${
+                featured ? "h-56 sm:h-full" : "h-44"
+              }`}
+            />
+          </div>
+        ) : null}
+        <div
+          className={`flex flex-col gap-3 ${featured ? "p-8" : "p-5"} ${
+            portrait && featured ? "sm:flex-1" : ""
           }`}
         >
-          {c.name}
-        </h3>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs opacity-60">
-          <span>{c.takeCount} takes</span>
-          <span>Rep {c.reputationIndex}</span>
-          <span>Owner {truncateAddr(c.owner)}</span>
+          <div className="flex items-center justify-between">
+            <Pill tone="filled">{arch.label}</Pill>
+            {featured ? (
+              <span className="font-mono text-xs uppercase tracking-wide opacity-60">
+                Featured
+              </span>
+            ) : (
+              <span className="font-mono text-xs opacity-50">#{c.tokenId}</span>
+            )}
+          </div>
+          <h3
+            className={`font-display font-black leading-none ${
+              featured ? "text-4xl" : "text-2xl"
+            }`}
+          >
+            {c.name}
+          </h3>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs opacity-60">
+            <span>{c.takeCount} takes</span>
+            <span>Rep {c.reputationIndex}</span>
+            <span>Owner {truncateAddr(c.owner)}</span>
+          </div>
         </div>
       </Card>
     </Link>
@@ -150,8 +175,11 @@ export default function CharactersIndexPage() {
         }),
       );
 
-      summaries.sort((a, b) => b.reputationIndex - a.reputationIndex);
-      return summaries;
+      // Only surface characters that have actually done something — empty
+      // test/early mints stay on-chain but don't clutter the roster.
+      return summaries
+        .filter((s) => s.takeCount > 0)
+        .sort((a, b) => b.reputationIndex - a.reputationIndex);
     },
   });
 
@@ -163,7 +191,7 @@ export default function CharactersIndexPage() {
       <header className="flex flex-col gap-2">
         <h1 className="font-display font-black text-4xl md:text-5xl">Characters</h1>
         <p className="font-mono text-xs uppercase tracking-wide opacity-60">
-          All minted heckle personalities, sorted by reputation.
+          Active heckle personalities, ranked by earned reputation.
         </p>
       </header>
 

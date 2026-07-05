@@ -1,13 +1,15 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo } from "react";
 import { usePublicClient } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { archetype } from "@heckle/shared";
+import { archetype, gradePrediction, REP_SCORING } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { TakeCard } from "@/components/TakeCard";
+import { TransferControls } from "@/components/TransferControls";
+import { CharacterPortrait, hasPortrait } from "@/components/CharacterPortrait";
 import { HashLink } from "@/components/HashLink";
 import {
   charactersContract,
@@ -44,6 +46,7 @@ interface CharacterView {
     txHash: string;
     verified: boolean;
     matchupId: string;
+    prediction: string | null;
   }[];
   eventsAttended: number;
 }
@@ -155,6 +158,8 @@ export default function CharacterPage({
                 verified: takeBlob?.inferenceAttestation?.valid === true,
                 matchupId:
                   typeof takeBlob?.matchupId === "string" ? takeBlob.matchupId : "",
+                prediction:
+                  typeof takeBlob?.prediction === "string" ? takeBlob.prediction : null,
               },
             };
           }),
@@ -198,6 +203,24 @@ export default function CharacterPage({
     },
   });
 
+  const record = useMemo(() => {
+    const takes = data?.takes ?? [];
+    let correct = 0;
+    let wrong = 0;
+    let pending = 0;
+    for (const t of takes) {
+      if (!t.matchupId) continue;
+      const o = gradePrediction(t.matchupId, t.prediction);
+      if (o === "correct") correct++;
+      else if (o === "wrong") wrong++;
+      else pending++;
+    }
+    const graded = correct + wrong;
+    const rep = correct * REP_SCORING.correct + wrong * REP_SCORING.wrong;
+    const acc = graded ? Math.round((correct / graded) * 100) : null;
+    return { correct, wrong, pending, graded, rep, acc };
+  }, [data]);
+
   if (!configured) {
     return (
       <Card className="p-8">
@@ -229,20 +252,38 @@ export default function CharacterPage({
 
   return (
     <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">{arch.label}</Pill>
-          <span className="font-mono text-xs opacity-60">Token #{tokenId}</span>
-        </div>
-        <h1 className="font-display font-black text-5xl leading-none">
-          {data.name}
-        </h1>
-        <p className="font-mono text-sm opacity-70">@{data.handle}</p>
-        <div className="flex flex-wrap items-center gap-4">
-          <HashLink type="address" value={data.owner} label="Owner" />
-          <span className="font-mono text-xs opacity-70">
-            Reputation {data.reputationIndex}
-          </span>
+      <header className="flex flex-col sm:flex-row gap-6 sm:items-end">
+        {hasPortrait(tokenId) ? (
+          <div className="h-36 w-36 sm:h-44 sm:w-44 shrink-0 border border-rule bg-whisper overflow-hidden">
+            <CharacterPortrait
+              tokenId={tokenId}
+              name={data.name}
+              className="h-full w-full grayscale"
+              priority
+            />
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="filled">{arch.label}</Pill>
+            <span className="font-mono text-xs opacity-60">Token #{tokenId}</span>
+          </div>
+          <h1 className="font-display font-black text-5xl leading-none">
+            {data.name}
+          </h1>
+          <p className="font-mono text-sm opacity-70">@{data.handle}</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <HashLink type="address" value={data.owner} label="Owner" />
+            <span className="font-mono text-xs opacity-70">
+              Reputation {record.rep >= 0 ? "+" : ""}
+              {record.rep}
+            </span>
+            {record.acc !== null ? (
+              <span className="font-mono text-xs opacity-70">
+                {record.correct}/{record.graded} called · {record.acc}%
+              </span>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -263,7 +304,7 @@ export default function CharacterPage({
             { label: "Takes", value: data.takes.length },
             {
               label: "Predictions",
-              value: `${data.predictionsCorrect}/${data.predictionsTotal}`,
+              value: record.correct + record.wrong + record.pending,
             },
             { label: "Votes", value: data.votesReceived },
           ].map((stat) => (
@@ -279,6 +320,35 @@ export default function CharacterPage({
         </div>
       </section>
 
+      {record.graded + record.pending > 0 ? (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-2xl font-black">Track record</h2>
+            <span className="font-mono text-xs uppercase tracking-wide opacity-50">
+              Scored by reality
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule">
+            {[
+              { label: "Correct", value: `${record.correct}` },
+              { label: "Wrong", value: `${record.wrong}` },
+              { label: "Accuracy", value: record.acc === null ? "—" : `${record.acc}%` },
+              { label: "Reputation", value: `${record.rep >= 0 ? "+" : ""}${record.rep}` },
+            ].map((s) => (
+              <div key={s.label} className="bg-paper p-5 flex flex-col gap-1">
+                <span className="font-mono text-xs uppercase opacity-60">{s.label}</span>
+                <span className="font-display text-2xl font-black">{s.value}</span>
+              </div>
+            ))}
+          </div>
+          {record.pending > 0 ? (
+            <p className="font-mono text-xs opacity-60">
+              {record.pending} prediction{record.pending === 1 ? "" : "s"} awaiting results.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-2xl font-black">Take history</h2>
         {data.takes.length === 0 ? (
@@ -293,12 +363,18 @@ export default function CharacterPage({
             {data.takes.map((take) => (
               <TakeCard
                 key={take.takeId}
+                takeId={take.takeId}
                 text={take.text}
                 kind={take.kind}
                 timestamp={take.timestamp}
                 takeRoot={take.takeRoot}
                 txHash={take.txHash}
                 verified={take.verified}
+                outcome={
+                  take.matchupId
+                    ? gradePrediction(take.matchupId, take.prediction)
+                    : undefined
+                }
                 characterId={tokenId}
                 characterName={data.name}
                 archetypeLabel={arch.label}
@@ -307,6 +383,8 @@ export default function CharacterPage({
           </div>
         )}
       </section>
+
+      <TransferControls tokenId={tokenId} owner={data.owner} />
     </div>
   );
 }

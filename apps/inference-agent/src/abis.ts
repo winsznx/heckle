@@ -38,3 +38,11 @@ export const HECKLE_BRACKETS_ABI = [
   "function bracketOf(uint256 bracketId) view returns (tuple(uint256 eventId, address submitter, bytes32 predictionsRoot, uint64 timestamp))",
   "function totalBrackets() view returns (uint256)",
 ] as const;
+
+export const HECKLE_RESOLVER_ABI = [
+  "event Resolved(uint256 indexed matchId, uint8 outcome, uint16 homeScore, uint16 awayScore, bool finalized)",
+  "function resolver() view returns (address)",
+  "function results(uint256 matchId) view returns (uint8 outcome, uint16 homeScore, uint16 awayScore, uint64 resolvedAt, bool finalized)",
+  "function resolve(uint256 matchId, uint8 outcome, uint16 homeScore, uint16 awayScore, bool finalized)",
+  "function resolveBatch(uint256[] matchIds, uint8[] outcomes, uint16[] homeScores, uint16[] awayScores, bool[] finalizedFlags)",
+] as const;

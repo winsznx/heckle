@@ -15,7 +15,6 @@ import { Pill } from "@/components/ui/Pill";
 import { HashLink } from "@/components/HashLink";
 import { bracketsContract, contractConfigured } from "@/lib/contracts";
 import { heckleBracketsAbi } from "@/lib/abis";
-import { R32_COUNT } from "@/lib/bracket-data";
 import type { BracketPick } from "@/lib/bracket-state";
 
 type Stage =
@@ -29,7 +28,9 @@ type Stage =
 interface CommitBarProps {
   eventId: number;
   predictionSet: BracketPick[];
-  r32Count: number;
+  picked: number;
+  totalCount: number;
+  roundLabel: string;
   canCommit: boolean;
   champion: string | null;
   onClear: () => void;
@@ -38,7 +39,9 @@ interface CommitBarProps {
 export function CommitBar({
   eventId,
   predictionSet,
-  r32Count,
+  picked,
+  totalCount,
+  roundLabel,
   canCommit,
   champion,
   onClear,
@@ -139,7 +142,7 @@ export function CommitBar({
       : !configured
         ? "Brackets contract not configured"
         : !canCommit
-          ? `Pick all ${R32_COUNT} — ${r32Count}/${R32_COUNT}`
+          ? `Pick all ${totalCount} — ${picked}/${totalCount}`
           : busy
             ? "Committing…"
             : "Commit bracket on-chain";
@@ -153,14 +156,14 @@ export function CommitBar({
 
   return (
     <div className="sticky bottom-0 z-30 border border-rule bg-paper shadow-lift p-4 flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs uppercase tracking-wide opacity-60">
               Your bracket
             </span>
             <Pill tone={canCommit ? "filled" : "default"}>
-              {r32Count}/{R32_COUNT} R32
+              {picked}/{totalCount} {roundLabel}
             </Pill>
           </div>
           <span className="font-mono text-xs opacity-60 truncate">
@@ -169,7 +172,7 @@ export function CommitBar({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {r32Count > 0 && stage.phase !== "done" ? (
+          {picked > 0 && stage.phase !== "done" ? (
             <Button variant="secondary" onClick={onClear} disabled={busy}>
               Reset
             </Button>

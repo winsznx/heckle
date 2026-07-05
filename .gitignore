@@ -23,3 +23,6 @@ packages/contracts/broadcast/
 # misc
 .DS_Store
 *.log
+
+# Internal planning / scripts — not for the public repo
+internal/

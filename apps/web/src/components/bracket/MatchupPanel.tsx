@@ -50,7 +50,7 @@ export function MatchupPanel({
   }
 
   const [a, b] = contestants;
-  const isR32 = node.round === "R32";
+  const isR32 = Boolean(node.matchupId);
   const aVotes = a
     ? takes.filter((t) => t.prediction?.toLowerCase().includes(a.toLowerCase())).length
     : 0;

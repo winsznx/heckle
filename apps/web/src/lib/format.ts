@@ -1,3 +1,12 @@
+/** Pull "68% confidence" → 68 from a take's text. null if absent. */
+export function parseConfidence(text: string | null | undefined): number | null {
+  if (!text) return null;
+  const m = text.match(/(\d{1,3})\s*%/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= 0 && n <= 100 ? n : null;
+}
+
 /** 2-letter ISO code → regional-indicator flag emoji. Empty for bad input. */
 export function flagEmoji(code: string): string {
   if (!/^[A-Za-z]{2}$/.test(code)) return "";

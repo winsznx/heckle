@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { HashLink } from "@/components/HashLink";
+import { TeeReplay } from "@/components/TeeReplay";
 import { fetchBlob, type InferenceAttestation } from "@/lib/storage";
 
 type Blob = Record<string, unknown>;
@@ -99,6 +100,13 @@ function AttestationPanel({ att }: { att: InferenceAttestation }) {
         <Field label="Signature · ECDSA / EIP-191">{att.signature}</Field>
       ) : null}
       {att.chatId ? <Field label="Chat id">{att.chatId}</Field> : null}
+      {att.signedText && att.signature && att.signer ? (
+        <TeeReplay
+          signedText={att.signedText}
+          signature={att.signature}
+          signer={att.signer}
+        />
+      ) : null}
     </Card>
   );
 }

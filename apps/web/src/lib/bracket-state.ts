@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  BRACKET_BY_ID,
-  BRACKET_NODES,
-  R32_COUNT,
-  ROUNDS,
-} from "./bracket-data";
+import type { BracketDef } from "./bracket-data";
 
 export type Picks = Record<string, string>;
 
@@ -19,27 +14,28 @@ const STORAGE_PREFIX = "heckle:bracket:";
 export function contestantsOf(
   nodeId: string,
   picks: Picks,
+  def: BracketDef,
 ): [string | null, string | null] {
-  const node = BRACKET_BY_ID.get(nodeId);
+  const node = def.byId.get(nodeId);
   if (!node) return [null, null];
-  if (node.round === "R32") return [node.a ?? null, node.b ?? null];
-  const [f0, f1] = node.feeders ?? ["", ""];
+  if (!node.feeders) return [node.a ?? null, node.b ?? null];
+  const [f0, f1] = node.feeders;
   return [picks[f0] ?? null, picks[f1] ?? null];
 }
 
 /**
  * Drop any pick no longer valid given upstream picks. Processed outer→inner so
- * each inner node resolves against already-settled feeders — re-picking an R32
+ * each inner node resolves against already-settled feeders — re-picking a
  * winner cascades: stale downstream advances fall away instead of lingering.
  */
-function prune(picks: Picks): Picks {
+function prune(picks: Picks, def: BracketDef): Picks {
   const next: Picks = {};
-  for (const round of ROUNDS) {
-    for (const node of BRACKET_NODES) {
+  for (const round of def.rounds) {
+    for (const node of def.nodes) {
       if (node.round !== round) continue;
       const chosen = picks[node.id];
       if (!chosen) continue;
-      const [a, b] = contestantsOf(node.id, next);
+      const [a, b] = contestantsOf(node.id, next, def);
       if (chosen === a || chosen === b) next[node.id] = chosen;
     }
   }
@@ -51,15 +47,18 @@ export interface BracketState {
   pick: (nodeId: string, winner: string) => void;
   clear: () => void;
   contestants: (nodeId: string) => [string | null, string | null];
-  r32Count: number;
+  outerCount: number;
   canCommit: boolean;
   champion: string | null;
   predictionSet: BracketPick[];
   hydrated: boolean;
 }
 
-export function useBracketState(eventId: number | null): BracketState {
-  const key = eventId === null ? null : `${STORAGE_PREFIX}${eventId}`;
+export function useBracketState(
+  eventId: number | null,
+  def: BracketDef,
+): BracketState {
+  const key = eventId === null ? null : `${STORAGE_PREFIX}${eventId}:${def.outerRound}`;
   const [picks, setPicks] = useState<Picks>({});
   const [hydrated, setHydrated] = useState(false);
 
@@ -69,12 +68,12 @@ export function useBracketState(eventId: number | null): BracketState {
     if (!key) return;
     try {
       const raw = window.localStorage.getItem(key);
-      if (raw) setPicks(prune(JSON.parse(raw) as Picks));
+      if (raw) setPicks(prune(JSON.parse(raw) as Picks, def));
     } catch {
       /* ignore corrupt storage */
     }
     setHydrated(true);
-  }, [key]);
+  }, [key, def]);
 
   // Persist after hydration so the empty initial state never clobbers storage.
   useEffect(() => {
@@ -86,35 +85,37 @@ export function useBracketState(eventId: number | null): BracketState {
     }
   }, [key, hydrated, picks]);
 
-  const pick = useCallback((nodeId: string, winner: string) => {
-    setPicks((prev) => {
-      const next = { ...prev };
-      if (next[nodeId] === winner) delete next[nodeId];
-      else next[nodeId] = winner;
-      return prune(next);
-    });
-  }, []);
+  const pick = useCallback(
+    (nodeId: string, winner: string) => {
+      setPicks((prev) => {
+        const next = { ...prev };
+        if (next[nodeId] === winner) delete next[nodeId];
+        else next[nodeId] = winner;
+        return prune(next, def);
+      });
+    },
+    [def],
+  );
 
   const clear = useCallback(() => setPicks({}), []);
 
   const contestants = useCallback(
-    (nodeId: string) => contestantsOf(nodeId, picks),
-    [picks],
+    (nodeId: string) => contestantsOf(nodeId, picks, def),
+    [picks, def],
   );
 
-  const r32Count = useMemo(
+  const outerPicked = useMemo(
     () =>
-      BRACKET_NODES.filter((n) => n.round === "R32" && picks[n.id]).length,
-    [picks],
+      def.nodes.filter((n) => n.round === def.outerRound && picks[n.id]).length,
+    [picks, def],
   );
 
   const predictionSet = useMemo<BracketPick[]>(
     () =>
-      BRACKET_NODES.filter((n) => picks[n.id]).map((n) => ({
-        matchupId: n.id,
-        winner: picks[n.id],
-      })),
-    [picks],
+      def.nodes
+        .filter((n) => picks[n.id])
+        .map((n) => ({ matchupId: n.id, winner: picks[n.id] })),
+    [picks, def],
   );
 
   return {
@@ -122,9 +123,9 @@ export function useBracketState(eventId: number | null): BracketState {
     pick,
     clear,
     contestants,
-    r32Count,
-    canCommit: r32Count === R32_COUNT,
-    champion: picks["F_1"] ?? null,
+    outerCount: outerPicked,
+    canCommit: outerPicked === def.outerCount,
+    champion: picks[def.finalId] ?? null,
     predictionSet,
     hydrated,
   };

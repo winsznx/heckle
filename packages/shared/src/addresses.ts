@@ -11,6 +11,8 @@ export const DEPLOYED_ADDRESSES = {
   events: "0x30F9cF192A93C817d152606225a9C3DEC1d1B616" as Hex,
   takes: "0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD" as Hex,
   brackets: "0xa1139baE1bdC2FC94A400bc8097342dB0A0f3E6B" as Hex,
+  votes: "0x86D905467F90a656fE77c60e666F7B9cdC9320bB" as Hex,
+  resolver: "0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3" as Hex,
 } as const;
 
 export const HECKLE_ADDRESSES = {
@@ -18,6 +20,8 @@ export const HECKLE_ADDRESSES = {
   events: (process.env.NEXT_PUBLIC_HECKLE_EVENTS as Hex) || DEPLOYED_ADDRESSES.events,
   takes: (process.env.NEXT_PUBLIC_HECKLE_TAKES as Hex) || DEPLOYED_ADDRESSES.takes,
   brackets: (process.env.NEXT_PUBLIC_HECKLE_BRACKETS as Hex) || DEPLOYED_ADDRESSES.brackets,
+  votes: (process.env.NEXT_PUBLIC_HECKLE_VOTES as Hex) || DEPLOYED_ADDRESSES.votes,
+  resolver: (process.env.NEXT_PUBLIC_HECKLE_RESOLVER as Hex) || DEPLOYED_ADDRESSES.resolver,
 } as const;
 
 export function isConfigured(addr: Hex): boolean {

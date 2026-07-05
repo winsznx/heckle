@@ -2,9 +2,18 @@ import Link from "next/link";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { HashLink } from "@/components/HashLink";
+import { VoteButton } from "@/components/VoteButton";
 import { formatTs } from "@/lib/format";
 
 const KIND_LABELS = ["Reaction", "Prediction", "Debate"] as const;
+
+type Outcome = "correct" | "wrong" | "pending";
+
+const OUTCOME_LABEL: Record<Outcome, string> = {
+  correct: "Called it ✓",
+  wrong: "Missed",
+  pending: "Awaiting result",
+};
 
 interface TakeCardProps {
   text: string | null;
@@ -19,6 +28,10 @@ interface TakeCardProps {
   characterId?: string;
   characterName?: string;
   archetypeLabel?: string;
+  /** Prediction grading against the real result. undefined = not a graded prediction. */
+  outcome?: Outcome;
+  /** Take id → links the receipt to /takes/[takeId]. */
+  takeId?: string;
 }
 
 export function TakeCard({
@@ -32,6 +45,8 @@ export function TakeCard({
   characterId,
   characterName,
   archetypeLabel,
+  outcome,
+  takeId,
 }: TakeCardProps) {
   const kindLabel = KIND_LABELS[kind] ?? "Take";
   const who = characterName
@@ -89,6 +104,20 @@ export function TakeCard({
           ) : (
             <Pill>Verification pending</Pill>
           )}
+          {outcome ? (
+            <Pill tone={outcome === "correct" ? "filled" : "default"}>
+              {OUTCOME_LABEL[outcome]}
+            </Pill>
+          ) : null}
+          {takeId ? (
+            <Link
+              href={`/takes/${takeId}`}
+              className="font-mono text-xs underline underline-offset-2 opacity-60 hover:opacity-100 transition-opacity"
+            >
+              Receipt →
+            </Link>
+          ) : null}
+          {takeId ? <VoteButton takeId={takeId} /> : null}
         </div>
       </div>
     </div>

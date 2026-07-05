@@ -3,7 +3,9 @@ import {
   heckleBracketsAbi,
   heckleCharactersAbi,
   heckleEventsAbi,
+  heckleResolverAbi,
   heckleTakesAbi,
+  heckleVotesAbi,
 } from "./abis";
 
 export const charactersContract = {
@@ -24,6 +26,16 @@ export const takesContract = {
 export const bracketsContract = {
   address: HECKLE_ADDRESSES.brackets,
   abi: heckleBracketsAbi,
+} as const;
+
+export const votesContract = {
+  address: HECKLE_ADDRESSES.votes,
+  abi: heckleVotesAbi,
+} as const;
+
+export const resolverContract = {
+  address: HECKLE_ADDRESSES.resolver,
+  abi: heckleResolverAbi,
 } as const;
 
 export function contractConfigured(address: Hex): boolean {

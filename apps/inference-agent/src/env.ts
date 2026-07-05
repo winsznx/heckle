@@ -8,6 +8,8 @@ export interface AgentEnv {
   HECKLE_CHARACTERS?: string;
   HECKLE_EVENTS?: string;
   HECKLE_TAKES?: string;
+  HECKLE_RESOLVER?: string;
+  FOOTBALL_DATA_TOKEN?: string;
   ZG_COMPUTE_PROVIDER?: string;
   ZG_COMPUTE_MODEL?: string;
 }
@@ -19,6 +21,8 @@ export const env: AgentEnv = {
   HECKLE_CHARACTERS: process.env.HECKLE_CHARACTERS,
   HECKLE_EVENTS: process.env.HECKLE_EVENTS,
   HECKLE_TAKES: process.env.HECKLE_TAKES,
+  HECKLE_RESOLVER: process.env.HECKLE_RESOLVER,
+  FOOTBALL_DATA_TOKEN: process.env.FOOTBALL_DATA_TOKEN,
   ZG_COMPUTE_PROVIDER: process.env.ZG_COMPUTE_PROVIDER,
   ZG_COMPUTE_MODEL: process.env.ZG_COMPUTE_MODEL,
 };

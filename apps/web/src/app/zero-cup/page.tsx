@@ -9,14 +9,14 @@ import { Divider } from "@/components/ui/Divider";
 import { RadialBracket } from "@/components/bracket/RadialBracket";
 import { MatchupPanel } from "@/components/bracket/MatchupPanel";
 import { CommitBar } from "@/components/bracket/CommitBar";
-import { BRACKET_BY_ID, R32_NODES } from "@/lib/bracket-data";
+import { R32_DEF } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
 
 export default function ZeroCupBracketPage() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  const state = useBracketState(eventId);
+  const state = useBracketState(eventId, R32_DEF);
   const [selectedId, setSelectedId] = useState<string>("R32_1");
 
   const countryOf = useMemo(() => {
@@ -28,17 +28,17 @@ export default function ZeroCupBracketPage() {
     return m;
   }, []);
 
-  const selectedNode = BRACKET_BY_ID.get(selectedId) ?? null;
-  const selectedTakes =
-    selectedNode?.round === "R32"
-      ? byMatchup.get(selectedNode.matchupId ?? selectedNode.id) ?? []
-      : [];
+  const selectedNode = R32_DEF.byId.get(selectedId) ?? null;
+  const selectedTakes = selectedNode?.matchupId
+    ? byMatchup.get(selectedNode.matchupId) ?? []
+    : [];
 
   function navigate(dir: -1 | 1) {
-    const idx = R32_NODES.findIndex((n) => n.id === selectedId);
+    const outer = R32_DEF.outerNodes;
+    const idx = outer.findIndex((n) => n.id === selectedId);
     const base = idx === -1 ? 0 : idx;
-    const next = (base + dir + R32_NODES.length) % R32_NODES.length;
-    setSelectedId(R32_NODES[next].id);
+    const next = (base + dir + outer.length) % outer.length;
+    setSelectedId(outer[next].id);
   }
 
   if (eventId === null) {
@@ -82,6 +82,7 @@ export default function ZeroCupBracketPage() {
       <Divider />
 
       <RadialBracket
+        def={R32_DEF}
         picks={state.picks}
         selectedId={selectedId}
         onSelect={setSelectedId}
@@ -104,7 +105,9 @@ export default function ZeroCupBracketPage() {
       <CommitBar
         eventId={eventId}
         predictionSet={state.predictionSet}
-        r32Count={state.r32Count}
+        picked={state.outerCount}
+        totalCount={R32_DEF.outerCount}
+        roundLabel="R32"
         canCommit={state.canCommit}
         champion={state.champion}
         onClear={state.clear}
