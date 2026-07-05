@@ -174,9 +174,10 @@ export function RadialBracket({
             });
           })}
 
-          {/* Each round's winner advances inward as its flag icon; the champion
-              lands by the trophy. */}
-          {innerNodes.map((node) => {
+          {/* Each round's winner advances inward as its flag icon — the outer
+              matchup's winner onto the next ring, and so on to the champion by
+              the trophy: 16 → 8 → 4 → 2 → 1. */}
+          {def.nodes.map((node) => {
             const winner = picks[node.id];
             if (!winner) return null;
             const isFinal = node.round === "Final";
