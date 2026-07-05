@@ -67,6 +67,14 @@ export function RadialBracket({
     () => def.nodes.filter((n) => n.round !== def.outerRound),
     [def],
   );
+  // Winner → flag, so an advancing team keeps its icon on each inner ring.
+  const countryByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const node of def.outerNodes) {
+      for (const c of node.contestants ?? []) m.set(c.name, c.country);
+    }
+    return m;
+  }, [def]);
 
   return (
     <div className="w-full max-w-radial mx-auto">
@@ -166,22 +174,34 @@ export function RadialBracket({
             });
           })}
 
-          {/* Inner-round winner labels + the champion under the trophy. */}
+          {/* Each round's winner advances inward as its flag icon; the champion
+              lands by the trophy. */}
           {innerNodes.map((node) => {
             const winner = picks[node.id];
             if (!winner) return null;
             const isFinal = node.round === "Final";
-            const anchor = isFinal ? { x: CENTER, y: CENTER + 34 } : node.center;
+            const anchor = isFinal ? { x: CENTER, y: CENTER + 46 } : node.center;
             const pos = toPercent(anchor, VIEWBOX);
+            const country = countryByName.get(winner) ?? "";
             return (
               <button
-                key={`label-${node.id}`}
+                key={`win-${node.id}`}
                 type="button"
                 onClick={() => onSelect(node.id)}
-                className="absolute -translate-x-1/2 -translate-y-1/2 font-mono text-xs font-bold leading-none whitespace-nowrap bg-paper px-1"
+                className="group absolute -translate-x-1/2 -translate-y-1/2 hover:z-20"
                 style={{ left: pos.left, top: pos.top }}
+                title={winner}
               >
-                {short(winner, isFinal ? 16 : 9)}
+                <span
+                  className={`grid place-items-center rounded-full border-2 border-ink bg-paper ${
+                    isFinal ? "w-9 h-9 text-base" : "w-8 h-8 text-sm"
+                  }`}
+                >
+                  {flagEmoji(country)}
+                </span>
+                <span className="absolute left-1/2 top-full -translate-x-1/2 mt-0.5 font-mono text-[0.6rem] font-bold leading-none whitespace-nowrap bg-paper px-1">
+                  {short(winner, isFinal ? 16 : 9)}
+                </span>
               </button>
             );
           })}
