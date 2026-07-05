@@ -70,6 +70,9 @@ and its entire take history + reputation travel with the token.
 | HeckleVotes (sqrt-weighted upvoting) | [`0x86D905467F90a656fE77c60e666F7B9cdC9320bB`](https://chainscan.0g.ai/address/0x86D905467F90a656fE77c60e666F7B9cdC9320bB) |
 | HeckleResolver (real-world result oracle) | [`0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3`](https://chainscan.0g.ai/address/0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3) |
 
+**All six are source-verified on [chainscan.0g.ai](https://chainscan.0g.ai)** — open any address and
+read the actual Solidity, matched against the deployed bytecode on the official 0G explorer.
+
 Reputation is not a separate deployment — it's a load-bearing subsystem inside `HeckleTakes`
 (the `Reputation` struct, `reputationOf`, and `gradePrediction`). Addresses are baked into
 `@heckle/shared` as defaults, so a fresh clone connects to the live contracts with zero config.

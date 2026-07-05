@@ -53,8 +53,9 @@ Storage → takes can't be replayed/audited; no INFT → characters aren't asset
 | HeckleVotes (sqrt-weighted upvoting) | `0x86D905467F90a656fE77c60e666F7B9cdC9320bB` |
 | HeckleResolver (real-world result oracle) | `0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3` |
 
-Reputation is a load-bearing subsystem inside `HeckleTakes` (`reputationOf`, `gradePrediction`). Verify
-on https://chainscan.0g.ai. Per-user cost to commit a bracket: ~0.00076 0G.
+**All six are source-verified on https://chainscan.0g.ai** — read the Solidity + verified-bytecode match
+on the official 0G explorer. Reputation is a load-bearing subsystem inside `HeckleTakes` (`reputationOf`,
+`gradePrediction`). Per-user cost to commit a bracket: ~0.00076 0G.
 
 ## Demo proof points (no login needed)
 
