@@ -54,12 +54,18 @@ export interface BracketState {
   hydrated: boolean;
 }
 
+const NO_SEED: Picks = {};
+
 export function useBracketState(
   eventId: number | null,
   def: BracketDef,
+  /** Settled results that are locked into the bracket (e.g. the real R32
+   *  winners once that round is decided) — they always win over user picks and
+   *  can't be changed, so the tournament's true progression is what's shown. */
+  seed: Picks = NO_SEED,
 ): BracketState {
   const key = eventId === null ? null : `${STORAGE_PREFIX}${eventId}:${def.outerRound}`;
-  const [picks, setPicks] = useState<Picks>({});
+  const [userPicks, setUserPicks] = useState<Picks>({});
   const [hydrated, setHydrated] = useState(false);
 
   // Client-only read of the persisted bracket (localStorage is unavailable in
@@ -68,36 +74,44 @@ export function useBracketState(
     if (!key) return;
     try {
       const raw = window.localStorage.getItem(key);
-      if (raw) setPicks(prune(JSON.parse(raw) as Picks, def));
+      if (raw) setUserPicks(JSON.parse(raw) as Picks);
     } catch {
       /* ignore corrupt storage */
     }
     setHydrated(true);
-  }, [key, def]);
+  }, [key]);
 
-  // Persist after hydration so the empty initial state never clobbers storage.
+  // Persist the user's own picks after hydration (never the seed).
   useEffect(() => {
     if (!key || !hydrated) return;
     try {
-      window.localStorage.setItem(key, JSON.stringify(picks));
+      window.localStorage.setItem(key, JSON.stringify(userPicks));
     } catch {
       /* ignore quota/availability errors */
     }
-  }, [key, hydrated, picks]);
+  }, [key, hydrated, userPicks]);
+
+  // Settled results override the user; prune drops any user pick invalidated by
+  // the advances above it.
+  const picks = useMemo(
+    () => prune({ ...userPicks, ...seed }, def),
+    [userPicks, seed, def],
+  );
 
   const pick = useCallback(
     (nodeId: string, winner: string) => {
-      setPicks((prev) => {
+      if (nodeId in seed) return; // settled round — locked to the real result
+      setUserPicks((prev) => {
         const next = { ...prev };
         if (next[nodeId] === winner) delete next[nodeId];
         else next[nodeId] = winner;
-        return prune(next, def);
+        return next;
       });
     },
-    [def],
+    [seed],
   );
 
-  const clear = useCallback(() => setPicks({}), []);
+  const clear = useCallback(() => setUserPicks({}), []);
 
   const contestants = useCallback(
     (nodeId: string) => contestantsOf(nodeId, picks, def),

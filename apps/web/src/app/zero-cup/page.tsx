@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ZERO_CUP_R32, ZERO_CUP_R32_EVENT_ID } from "@heckle/shared";
+import {
+  ZERO_CUP_R32,
+  ZERO_CUP_R32_EVENT_ID,
+  ZERO_CUP_R32_RESULTS,
+} from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
@@ -13,11 +17,19 @@ import { R32_DEF } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
 
+// Rounds inside R32 — what a visitor actually predicts now that R32 is settled.
+const INNER_NODES = R32_DEF.nodes.filter((n) => n.round !== R32_DEF.outerRound);
+
 export default function ZeroCupBracketPage() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  const state = useBracketState(eventId, R32_DEF);
+  // Seed the settled R32 results so the winners are already advanced to R16 —
+  // the tournament's real progression, not a blank slate.
+  const state = useBracketState(eventId, R32_DEF, ZERO_CUP_R32_RESULTS);
   const [selectedId, setSelectedId] = useState<string>("R32_1");
+
+  const innerPicked = INNER_NODES.filter((n) => state.picks[n.id]).length;
+  const canCommit = Boolean(state.champion);
 
   const countryOf = useMemo(() => {
     const m = new Map<string, string>();
@@ -53,7 +65,7 @@ export default function ZeroCupBracketPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">Live — build until Jul 3</Pill>
+          <Pill tone="filled">R32 settled · R16 live</Pill>
           <span className="font-mono text-xs uppercase opacity-60">
             Event #{eventId}
           </span>
@@ -62,9 +74,10 @@ export default function ZeroCupBracketPage() {
           Zero Cup bracket
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          32 builders, one radial bracket. Tap a matchup to hear all three
-          hecklers&rsquo; verified calls, pick your winners, and commit your full
-          bracket on-chain.
+          The Round of 32 is settled — its 16 winners have advanced inward to the
+          R16 ring. Follow the tournament toward the trophy: tap any matchup for
+          all three hecklers&rsquo; verified calls, then predict the Round of 16
+          through to the champion and commit your bracket on-chain.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link
@@ -105,10 +118,10 @@ export default function ZeroCupBracketPage() {
       <CommitBar
         eventId={eventId}
         predictionSet={state.predictionSet}
-        picked={state.outerCount}
-        totalCount={R32_DEF.outerCount}
-        roundLabel="R32"
-        canCommit={state.canCommit}
+        picked={innerPicked}
+        totalCount={INNER_NODES.length}
+        roundLabel="predictions"
+        canCommit={canCommit}
         champion={state.champion}
         onClear={state.clear}
       />

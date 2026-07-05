@@ -329,7 +329,7 @@ export default function WorldCupPage() {
         </div>
       )}
 
-      <Card className="border border-rule bg-ink text-paper p-8 flex flex-col gap-3">
+      <div className="border border-rule bg-ink text-paper shadow-card p-8 flex flex-col gap-3">
         <h2 className="font-display text-2xl md:text-3xl font-black">
           One engine. Every arena.
         </h2>
@@ -352,7 +352,7 @@ export default function WorldCupPage() {
           on 0G mainnet, so grading settles against an auditable on-chain record —
           not a trusted claim.
         </p>
-      </Card>
+      </div>
     </div>
   );
 }

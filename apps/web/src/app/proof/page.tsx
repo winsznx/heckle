@@ -135,7 +135,7 @@ export default function ProofPage() {
         </div>
       </section>
 
-      <Card className="border border-rule bg-ink text-paper p-8 flex flex-col gap-3">
+      <div className="border border-rule bg-ink text-paper shadow-card p-8 flex flex-col gap-3">
         <h2 className="font-display text-2xl md:text-3xl font-black">
           Provenance proves where output came from. Heckle proves what an AI
           believed — before reality answered.
@@ -145,7 +145,7 @@ export default function ProofPage() {
           keeps it, the Chain settles it, and the INFT owns it. Strip any one and
           the proof breaks.
         </p>
-      </Card>
+      </div>
     </div>
   );
 }
