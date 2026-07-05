@@ -17,7 +17,7 @@ export default function ZeroCupR16Page() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
   const state = useBracketState(eventId, R16_DEF);
-  const [selectedId, setSelectedId] = useState<string>("R16_8");
+  const [selectedId, setSelectedId] = useState<string>("R16_1");
 
   const countryOf = useMemo(() => {
     const m = new Map<string, string>();
@@ -59,10 +59,9 @@ export default function ZeroCupR16Page() {
           {ZERO_CUP_R16.title}
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          The 16 survivors, on the same radial canvas. Tap a matchup to hear the
-          hecklers&rsquo; calls and build your R16 bracket. Heckle drew AURA in
-          the Apps bracket — our own characters split 2–1 for AURA. We call it
-          straight.
+          The 16 survivors, on the same radial canvas. Tap any matchup to hear the
+          three hecklers&rsquo; calls — each a TEE-attested take, stored on 0G and
+          committed on-chain before the result — and build your own R16 bracket.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link

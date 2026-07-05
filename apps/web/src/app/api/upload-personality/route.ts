@@ -13,6 +13,7 @@ interface PersonalityPayload {
   palette: number;
   createdAt: number;
   creator: string;
+  imageRoot?: string;
 }
 
 function isPersonalityPayload(value: unknown): value is PersonalityPayload {
@@ -25,7 +26,8 @@ function isPersonalityPayload(value: unknown): value is PersonalityPayload {
     typeof v.personalityBrief === "string" &&
     typeof v.palette === "number" &&
     typeof v.createdAt === "number" &&
-    typeof v.creator === "string"
+    typeof v.creator === "string" &&
+    (v.imageRoot === undefined || typeof v.imageRoot === "string")
   );
 }
 

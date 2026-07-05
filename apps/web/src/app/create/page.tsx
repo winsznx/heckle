@@ -37,6 +37,23 @@ type MintStage =
 
 const STEP_LABELS = ["Archetype", "Identity", "Brief", "Palette", "Preview"];
 
+/** Downscale + re-encode a picked image to a small webp data URL so the copy
+ *  stored on 0G stays light (it's served back from the gateway, not a CDN). */
+async function toPortraitDataUrl(file: File, max = 640): Promise<string> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not available.");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  return canvas.toDataURL("image/webp", 0.85);
+}
+
 function CreateFlow() {
   const router = useRouter();
   const { address } = useAccount();
@@ -49,6 +66,8 @@ function CreateFlow() {
   const [handle, setHandle] = useState("");
   const [brief, setBrief] = useState("");
   const [paletteId, setPaletteId] = useState<number | null>(null);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [mint, setMint] = useState<MintStage>({ phase: "idle" });
 
   const configured = contractConfigured(charactersContract.address);
@@ -81,6 +100,35 @@ function CreateFlow() {
       return;
     }
 
+    let root: Hex;
+    let uri: string;
+    let imageRoot: string | undefined;
+
+    // Optional portrait → 0G Storage first, so its root can ride in the blob.
+    if (imageDataUrl) {
+      try {
+        setMint({ phase: "uploading" });
+        const res = await fetch("/api/upload-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl: imageDataUrl }),
+        });
+        if (!res.ok) {
+          const data: { error?: string } = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? `Image upload failed (${res.status}).`);
+        }
+        const data: { root: string } = await res.json();
+        imageRoot = data.root;
+      } catch (err) {
+        setMint({
+          phase: "error",
+          failed: "upload",
+          message: err instanceof Error ? err.message : "Image upload failed.",
+        });
+        return;
+      }
+    }
+
     const blob = {
       name: name.trim(),
       handle: handle.trim(),
@@ -89,10 +137,8 @@ function CreateFlow() {
       palette: paletteId,
       createdAt: Math.floor(Date.now() / 1000),
       creator: address,
+      ...(imageRoot ? { imageRoot } : {}),
     };
-
-    let root: Hex;
-    let uri: string;
 
     try {
       setMint({ phase: "uploading" });
@@ -159,6 +205,23 @@ function CreateFlow() {
         failed: "mint",
         message: err instanceof Error ? err.message : "Mint failed.",
       });
+    }
+  }
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError(null);
+    try {
+      const dataUrl = await toPortraitDataUrl(file);
+      const b64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+      if (Math.ceil(b64.length * 0.75) > 300 * 1024) {
+        setImageError("That image is too heavy even downscaled — try a simpler one.");
+        return;
+      }
+      setImageDataUrl(dataUrl);
+    } catch {
+      setImageError("Couldn't read that image.");
     }
   }
 
@@ -249,35 +312,84 @@ function CreateFlow() {
       ) : null}
 
       {step === 3 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-rule border border-rule">
-          {PALETTES.map((pal) => {
-            const selected = paletteId === pal.id;
-            return (
-              <button
-                key={pal.id}
-                type="button"
-                onClick={() => setPaletteId(pal.id)}
-                className="p-3 flex flex-col gap-2 transition-transform hover:-translate-y-px bg-paper"
-              >
-                <span
-                  className="block h-16 border border-rule"
-                  style={{ backgroundColor: pal.surface }}
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-rule border border-rule">
+            {PALETTES.map((pal) => {
+              const selected = paletteId === pal.id;
+              return (
+                <button
+                  key={pal.id}
+                  type="button"
+                  onClick={() => setPaletteId(pal.id)}
+                  className="p-3 flex flex-col gap-2 transition-transform hover:-translate-y-px bg-paper"
                 >
                   <span
-                    className="block h-6 border-b border-rule"
-                    style={{ backgroundColor: pal.fill }}
-                  />
-                </span>
-                <span
-                  className={`font-mono text-xs uppercase ${
-                    selected ? "border-b-2 border-rule" : ""
-                  }`}
+                    className="block h-16 border border-rule"
+                    style={{ backgroundColor: pal.surface }}
+                  >
+                    <span
+                      className="block h-6 border-b border-rule"
+                      style={{ backgroundColor: pal.fill }}
+                    />
+                  </span>
+                  <span
+                    className={`font-mono text-xs uppercase ${
+                      selected ? "border-b-2 border-rule" : ""
+                    }`}
+                  >
+                    {pal.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col gap-3 border border-rule p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs uppercase tracking-wide opacity-70">
+                Portrait (optional)
+              </span>
+              <span className="font-mono text-xs uppercase tracking-wide opacity-40">
+                Stored on 0G
+              </span>
+            </div>
+            <p className="font-body text-sm opacity-70">
+              Give your heckler a face. It&rsquo;s downscaled and uploaded to 0G
+              Storage — content-addressed and independently verifiable, not a repo
+              asset. Skip it to use the archetype&rsquo;s default card.
+            </p>
+            <div className="flex items-center gap-4">
+              {imageDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageDataUrl}
+                  alt="portrait preview"
+                  className="h-20 w-20 object-cover border border-rule grayscale"
+                />
+              ) : null}
+              <label className="border border-rule bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wide cursor-pointer hover:bg-whisper transition-colors">
+                {imageDataUrl ? "Change image" : "Choose image"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/avif"
+                  className="hidden"
+                  onChange={onPickImage}
+                />
+              </label>
+              {imageDataUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setImageDataUrl(null)}
+                  className="font-mono text-xs uppercase tracking-wide opacity-60 hover:opacity-100 underline underline-offset-2"
                 >
-                  {pal.name}
-                </span>
-              </button>
-            );
-          })}
+                  Remove
+                </button>
+              ) : null}
+            </div>
+            {imageError ? (
+              <p className="font-mono text-xs opacity-80">{imageError}</p>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

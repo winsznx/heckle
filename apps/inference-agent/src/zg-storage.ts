@@ -51,6 +51,34 @@ export async function uploadJson(
 }
 
 /**
+ * Upload raw bytes (e.g. an image) to 0G Storage and return its Merkle root.
+ * Same content-addressing as uploadJson — the root is a hash of the bytes, so a
+ * character portrait becomes independently verifiable on 0G. Throws on SDK error.
+ */
+export async function uploadBytes(
+  signer: Signer,
+  bytes: Buffer | Uint8Array,
+): Promise<UploadResult> {
+  const data = new MemData(Buffer.from(bytes));
+
+  const [tree, treeErr] = await data.merkleTree();
+  if (treeErr) throw treeErr;
+  const root = tree?.rootHash();
+  if (!root) throw new Error("0G Storage: failed to compute Merkle root");
+
+  const [result, uploadErr] = await getIndexer().upload(
+    data,
+    env.ZG_RPC_URL,
+    signer,
+  );
+  if (uploadErr) throw uploadErr;
+  if (!result) throw new Error("0G Storage: upload returned no result");
+
+  const tx = "txHash" in result ? result.txHash : result.txHashes[0];
+  return { root, uri: storageUri(root), tx };
+}
+
+/**
  * Download a JSON blob from 0G Storage by Merkle root and parse it.
  * Throws on SDK or parse errors.
  */

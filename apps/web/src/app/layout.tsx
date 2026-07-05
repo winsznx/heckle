@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { display, body, mono } from "./fonts";
 import { Providers } from "@/providers/Providers";
 import { Nav } from "@/components/Nav";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({
           <main className="mx-auto w-full max-w-content px-4 py-8 overflow-x-clip">
             {children}
           </main>
+          <Footer />
         </Providers>
       </body>
     </html>

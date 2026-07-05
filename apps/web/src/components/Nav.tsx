@@ -11,6 +11,7 @@ const PRIMARY = [
   { href: "/events/world-cup", label: "World Cup" },
   { href: "/proof", label: "Proof" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/about", label: "About" },
 ] as const;
 
 const ALL_LINKS = [
@@ -21,6 +22,7 @@ const ALL_LINKS = [
   { href: "/events/1", label: "Events" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/proof", label: "Proof" },
+  { href: "/judge", label: "For judges" },
   { href: "/characters", label: "Characters" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/about", label: "About" },

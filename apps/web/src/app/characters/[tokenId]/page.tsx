@@ -9,7 +9,11 @@ import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { TakeCard } from "@/components/TakeCard";
 import { TransferControls } from "@/components/TransferControls";
-import { CharacterPortrait, hasPortrait } from "@/components/CharacterPortrait";
+import {
+  CharacterPortrait,
+  hasPortrait,
+  portraitRoot,
+} from "@/components/CharacterPortrait";
 import { HashLink } from "@/components/HashLink";
 import {
   charactersContract,
@@ -30,6 +34,7 @@ interface CharacterView {
   archetype: number;
   paletteId: number;
   brief: string;
+  imageRoot: string | null;
   personalityRoot: `0x${string}`;
   owner: `0x${string}`;
   reputationIndex: number;
@@ -190,6 +195,7 @@ export default function CharacterPage({
         archetype: meta.archetype,
         paletteId: typeof blob?.palette === "number" ? blob.palette : 1,
         brief: blob?.personalityBrief ?? "",
+        imageRoot: typeof blob?.imageRoot === "string" ? blob.imageRoot : null,
         personalityRoot: meta.personalityRoot,
         owner,
         reputationIndex: repIndex,
@@ -249,18 +255,29 @@ export default function CharacterPage({
   }
 
   const arch = archetype(archetypeIdFromIndex(data.archetype));
+  const imageOnChainRoot = portraitRoot(tokenId) ?? data.imageRoot;
 
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col sm:flex-row gap-6 sm:items-end">
-        {hasPortrait(tokenId) ? (
-          <div className="h-36 w-36 sm:h-44 sm:w-44 shrink-0 border border-rule bg-whisper overflow-hidden">
-            <CharacterPortrait
-              tokenId={tokenId}
-              name={data.name}
-              className="h-full w-full grayscale"
-              priority
-            />
+        {hasPortrait(tokenId) || data.imageRoot ? (
+          <div className="flex flex-col gap-2 shrink-0">
+            <div className="h-36 w-36 sm:h-44 sm:w-44 border border-rule bg-whisper overflow-hidden">
+              <CharacterPortrait
+                tokenId={tokenId}
+                name={data.name}
+                imageRoot={data.imageRoot}
+                className="h-full w-full grayscale"
+                priority
+              />
+            </div>
+            {imageOnChainRoot ? (
+              <HashLink
+                type="storage_root"
+                value={imageOnChainRoot}
+                label="Portrait on 0G ·"
+              />
+            ) : null}
           </div>
         ) : null}
         <div className="flex flex-col gap-4">

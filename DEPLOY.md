@@ -107,13 +107,21 @@ deployer (= `AGENT_PRIVATE_KEY`).
 pnpm --filter @heckle/inference-agent exec tsx src/wc-real.ts --confirm
 ```
 
-**Autonomous resolution** — the resolver "does it itself". Cron this (Railway cron or any scheduler).
-Each run settles newly-finished results on-chain (write-once → re-runs are free) and grades the
-matches it just finalized, once. Keep the interval well above a run's duration so runs never overlap:
+**Autonomous resolution** — the resolver "does it itself". Two ways:
 
-```bash
-pnpm --filter @heckle/inference-agent exec tsx src/wc-auto.ts --confirm
-```
+1. **Zero-infra (recommended):** a Railway cron service that just pokes the already-deployed,
+   idempotent resolve endpoint on a schedule. No code build, no keys (the web service holds the
+   resolver key), no repo push. In the Railway dashboard: New service → Docker image
+   `curlimages/curl:latest` → Settings → Cron Schedule `0 */3 * * *`, Start Command
+   `curl -fsS -X POST https://tryheckle.xyz/api/worldcup/resolve`, Restart Policy `Never`. Each run
+   settles any newly-finished result (write-once → re-runs are free).
+
+2. **Full loop (settle + on-chain grading):** cron the agent. Each run settles new results AND grades
+   the matches it just finalized, once. Keep the interval above a run's duration so runs never overlap:
+
+   ```bash
+   pnpm --filter @heckle/inference-agent exec tsx src/wc-auto.ts --confirm
+   ```
 
 **Manual resolution** — no cron required. Anyone can `POST /api/worldcup/resolve` (the "Resolve results
 on-chain" button on `/events/world-cup`); it settles any finished-but-unsettled result, idempotently,

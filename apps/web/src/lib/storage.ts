@@ -6,6 +6,8 @@ export interface PersonalityBlob {
   archetype?: string;
   personalityBrief?: string;
   palette?: number;
+  /** 0G Storage root of the character's portrait image, if one was uploaded. */
+  imageRoot?: string;
   createdAt?: number;
   creator?: string;
   [key: string]: unknown;

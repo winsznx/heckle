@@ -24,6 +24,7 @@ interface CharacterSummary {
   owner: string;
   reputationIndex: number;
   takeCount: number;
+  imageRoot: string | null;
 }
 
 function CharacterTile({
@@ -34,7 +35,7 @@ function CharacterTile({
   featured?: boolean;
 }) {
   const arch = archetype(archetypeIdFromIndex(c.archetype));
-  const portrait = hasPortrait(c.tokenId);
+  const portrait = hasPortrait(c.tokenId) || Boolean(c.imageRoot);
   return (
     <Link href={`/characters/${c.tokenId}`} className="block">
       <Card
@@ -53,6 +54,7 @@ function CharacterTile({
             <CharacterPortrait
               tokenId={c.tokenId}
               name={c.name}
+              imageRoot={c.imageRoot}
               className={`w-full grayscale ${
                 featured ? "h-56 sm:h-full" : "h-44"
               }`}
@@ -171,6 +173,7 @@ export default function CharactersIndexPage() {
             owner: m.owner,
             reputationIndex: repIndex,
             takeCount,
+            imageRoot: typeof blob?.imageRoot === "string" ? blob.imageRoot : null,
           };
         }),
       );
