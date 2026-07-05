@@ -10,7 +10,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { HashLink } from "@/components/HashLink";
 import { TeeReplay } from "@/components/TeeReplay";
-import { fetchBlob, type InferenceAttestation } from "@/lib/storage";
+import { type InferenceAttestation } from "@/lib/storage";
 
 type Blob = Record<string, unknown>;
 
@@ -221,6 +221,53 @@ function EventView({ blob }: { blob: Blob }) {
   );
 }
 
+type StorageResult =
+  | { type: "json"; data: Blob }
+  | { type: "image" }
+  | { type: "binary" };
+
+/** Sniff common image formats by magic bytes so non-JSON roots render inline. */
+function looksLikeImage(b: Uint8Array): boolean {
+  if (b.length < 12) return false;
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return true; // PNG
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return true; // JPEG
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46) return true; // RIFF/WEBP
+  if (String.fromCharCode(b[4], b[5], b[6], b[7]) === "ftyp") return true; // AVIF / HEIC
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return true; // GIF
+  return false;
+}
+
+function StorageImage({ root }: { root: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <Card className="p-6">
+        <p className="font-body opacity-70">
+          This root is an image on 0G Storage, but the gateway didn&rsquo;t return it just
+          now. Use &ldquo;View raw blob&rdquo; above to fetch it directly.
+        </p>
+      </Card>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <Pill tone="filled">Image</Pill>
+      <div className="border border-rule bg-whisper p-4 flex justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={storageUri(root)}
+          alt="0G Storage image"
+          onError={() => setFailed(true)}
+          className="max-h-[70vh] w-auto object-contain"
+        />
+      </div>
+      <p className="font-mono text-xs uppercase tracking-wide opacity-50">
+        Content-addressed on 0G Storage — the root is a hash of these exact bytes.
+      </p>
+    </div>
+  );
+}
+
 export default function StoragePage({
   params,
 }: {
@@ -230,10 +277,60 @@ export default function StoragePage({
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["storage-blob", root],
-    queryFn: () => fetchBlob<Blob>(root),
+    queryFn: async (): Promise<StorageResult> => {
+      const res = await fetch(storageUri(root), { cache: "force-cache" });
+      if (!res.ok) throw new Error(`gateway ${res.status}`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      try {
+        return { type: "json", data: JSON.parse(new TextDecoder().decode(bytes)) as Blob };
+      } catch {
+        return { type: looksLikeImage(bytes) ? "image" : "binary" };
+      }
+    },
   });
 
-  const kind = data ? classify(data) : "unknown";
+  let body: ReactNode;
+  if (isLoading) {
+    body = (
+      <p className="font-mono text-xs uppercase opacity-60">Loading from 0G Storage…</p>
+    );
+  } else if (isError || data == null) {
+    body = (
+      <Card className="p-6">
+        <p className="font-body opacity-70">
+          Blob not retrievable from 0G Storage for this root.
+        </p>
+      </Card>
+    );
+  } else if (data.type === "image") {
+    body = <StorageImage root={root} />;
+  } else if (data.type === "binary") {
+    body = (
+      <Card className="p-6">
+        <p className="font-body opacity-70">
+          This blob isn&rsquo;t JSON or an image — use &ldquo;View raw blob&rdquo; above to
+          download it.
+        </p>
+      </Card>
+    );
+  } else {
+    const blob = data.data;
+    const kind = classify(blob);
+    body =
+      kind === "take" ? (
+        <TakeView blob={blob} />
+      ) : kind === "personality" ? (
+        <PersonalityView blob={blob} />
+      ) : kind === "event" ? (
+        <EventView blob={blob} />
+      ) : (
+        <Card className="p-6">
+          <pre className="font-mono text-xs whitespace-pre-wrap break-all">
+            {JSON.stringify(blob, null, 2)}
+          </pre>
+        </Card>
+      );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -255,27 +352,7 @@ export default function StoragePage({
 
       <Divider />
 
-      {isLoading ? (
-        <p className="font-mono text-xs uppercase opacity-60">Loading from 0G Storage…</p>
-      ) : isError || data == null ? (
-        <Card className="p-6">
-          <p className="font-body opacity-70">
-            Blob not retrievable from 0G Storage for this root.
-          </p>
-        </Card>
-      ) : kind === "take" ? (
-        <TakeView blob={data} />
-      ) : kind === "personality" ? (
-        <PersonalityView blob={data} />
-      ) : kind === "event" ? (
-        <EventView blob={data} />
-      ) : (
-        <Card className="p-6">
-          <pre className="font-mono text-xs whitespace-pre-wrap break-all">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </Card>
-      )}
+      {body}
     </div>
   );
 }
