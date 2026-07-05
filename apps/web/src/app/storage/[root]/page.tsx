@@ -275,32 +275,33 @@ export default function StoragePage({
 }) {
   const { root } = use(params);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["storage-blob", root],
     queryFn: async (): Promise<StorageResult> => {
-      const res = await fetch(storageUri(root), { cache: "force-cache" });
-      if (!res.ok) throw new Error(`gateway ${res.status}`);
-      const bytes = new Uint8Array(await res.arrayBuffer());
+      // No force-cache: it can pin a stale 404 from the moments right after an
+      // upload, before the indexer has propagated the root.
       try {
-        return { type: "json", data: JSON.parse(new TextDecoder().decode(bytes)) as Blob };
+        const res = await fetch(storageUri(root));
+        if (!res.ok) return { type: "image" };
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        try {
+          return { type: "json", data: JSON.parse(new TextDecoder().decode(bytes)) as Blob };
+        } catch {
+          return { type: looksLikeImage(bytes) ? "image" : "binary" };
+        }
       } catch {
-        return { type: looksLikeImage(bytes) ? "image" : "binary" };
+        // Classification fetch failed (CORS edge, gateway hiccup). Don't dead-end
+        // on "not retrievable" — let the <img> re-fetch and fall back on its own.
+        return { type: "image" };
       }
     },
+    retry: 2,
   });
 
   let body: ReactNode;
-  if (isLoading) {
+  if (isLoading || !data) {
     body = (
       <p className="font-mono text-xs uppercase opacity-60">Loading from 0G Storage…</p>
-    );
-  } else if (isError || data == null) {
-    body = (
-      <Card className="p-6">
-        <p className="font-body opacity-70">
-          Blob not retrievable from 0G Storage for this root.
-        </p>
-      </Card>
     );
   } else if (data.type === "image") {
     body = <StorageImage root={root} />;
