@@ -14,6 +14,7 @@ import { RadialBracket } from "@/components/bracket/RadialBracket";
 import { MatchupPanel } from "@/components/bracket/MatchupPanel";
 import { CommitBar } from "@/components/bracket/CommitBar";
 import { RoadToTheCup } from "@/components/RoadToTheCup";
+import { HashLink } from "@/components/HashLink";
 import { R32_DEF } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
@@ -104,6 +105,14 @@ export default function ZeroCupBracketPage() {
         onPick={state.pick}
         takeCount={(id) => byMatchup.get(id)?.length ?? 0}
       />
+
+      <div className="flex justify-center">
+        <HashLink
+          type="storage_root"
+          value="0x8251ae4e8a02cc8f0d6f666b1b59c5f4b36c804a34532049d1f21c9d86620b67"
+          label="The trophy itself is on 0G Storage ·"
+        />
+      </div>
 
       <div className="mx-auto w-full max-w-prose">
         <MatchupPanel

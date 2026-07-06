@@ -116,22 +116,23 @@ export function RadialBracket({
               />
             ))}
 
-          {/* Center trophy. */}
-          <g
-            className={champion ? "stroke-ink fill-paper" : "stroke-ink fill-paper opacity-30"}
-            strokeWidth={3}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          >
-            <path d="M481 480 H519 L513 500 Q500 509 487 500 Z" />
-            <path d="M481 483 C470 483 470 496 484 498" className="fill-none" />
-            <path d="M519 483 C530 483 530 496 516 498" className="fill-none" />
-            <path d="M500 507 V517" className="fill-none" />
-            <path d="M488 520 H512" className="fill-none" />
-          </g>
         </svg>
 
         <div className="absolute inset-0">
+          {/* Zero Cup trophy — the real image, stored on 0G Storage. */}
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{ width: "9%" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/zero-cup-trophy.avif"
+              alt="Zero Cup"
+              className={`block w-full transition-opacity ${
+                champion ? "opacity-100" : "opacity-25"
+              }`}
+            />
+          </div>
           {/* Project circles. */}
           {def.outerNodes.flatMap((node) => {
             const selected = selectedId === node.id;
