@@ -13,6 +13,7 @@ import { Divider } from "@/components/ui/Divider";
 import { RadialBracket } from "@/components/bracket/RadialBracket";
 import { MatchupPanel } from "@/components/bracket/MatchupPanel";
 import { CommitBar } from "@/components/bracket/CommitBar";
+import { RoadToTheCup } from "@/components/RoadToTheCup";
 import { R32_DEF } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
@@ -126,6 +127,10 @@ export default function ZeroCupBracketPage() {
         champion={state.champion}
         onClear={state.clear}
       />
+
+      <div className="pt-8">
+        <RoadToTheCup />
+      </div>
     </div>
   );
 }

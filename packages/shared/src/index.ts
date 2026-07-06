@@ -7,5 +7,6 @@ export * from "./demo-event";
 export * from "./zero-cup";
 export * from "./zero-cup-r16";
 export * from "./zero-cup-results";
+export * from "./zero-cup-schedule";
 export * from "./world-cup";
 export * from "./football";
