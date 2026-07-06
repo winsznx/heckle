@@ -186,14 +186,24 @@ export function RadialBracket({
             const anchor = isFinal ? { x: CENTER, y: CENTER + 46 } : node.center;
             const pos = toPercent(anchor, VIEWBOX);
             const country = countryByName.get(winner) ?? "";
+            const parent = def.parentByChild.get(node.id);
             return (
               <button
                 key={`win-${node.id}`}
                 type="button"
-                onClick={() => onSelect(node.id)}
+                onClick={() => {
+                  // Click a winner to advance it into the next round; the champion
+                  // (no parent) just re-selects to show its matchup + takes.
+                  if (parent) {
+                    onPick(parent, winner);
+                    onSelect(parent);
+                  } else {
+                    onSelect(node.id);
+                  }
+                }}
                 className="group absolute -translate-x-1/2 -translate-y-1/2 hover:z-20"
                 style={{ left: pos.left, top: pos.top }}
-                title={winner}
+                title={parent ? `Advance ${winner}` : winner}
               >
                 <span
                   className={`grid place-items-center rounded-full border-2 border-ink bg-paper ${

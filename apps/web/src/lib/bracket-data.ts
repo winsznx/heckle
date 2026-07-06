@@ -56,6 +56,8 @@ export interface BracketDef {
   outerCount: number;
   /** Join-ring radii for the guide circles (excludes the 0-radius final). */
   ringRadii: number[];
+  /** child node id → the node it feeds into. Lets a click on a winner advance it. */
+  parentByChild: Map<string, string>;
 }
 
 function meanAngle(a: number, b: number): number {
@@ -107,6 +109,7 @@ export function buildBracketDef(
     });
   });
 
+  const parentByChild = new Map<string, string>();
   let prev = matchups.map((m) => m.id);
   for (let level = 1; level < rounds.length; level++) {
     const round = rounds[level];
@@ -126,6 +129,8 @@ export function buildBracketDef(
         bracket: f0.bracket,
         feeders,
       });
+      parentByChild.set(feeders[0], id);
+      parentByChild.set(feeders[1], id);
       ids.push(id);
     }
     prev = ids;
@@ -140,6 +145,7 @@ export function buildBracketDef(
     finalId: prev[0] ?? "F_1",
     outerCount: matchups.length,
     ringRadii: rounds.map(rOf).filter((r) => r > 0),
+    parentByChild,
   };
 }
 

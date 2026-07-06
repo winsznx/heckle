@@ -81,7 +81,7 @@ export function MatchupPanel({
         </span>
         <span className="font-mono text-xs opacity-70">
           {isPick ? "Your pick ✓" : "Pick to advance"}
-          {isR32 ? ` · ${votes} heckler${votes === 1 ? "" : "s"}` : ""}
+          {takes.length > 0 ? ` · ${votes} heckler${votes === 1 ? "" : "s"}` : ""}
         </span>
       </button>
     );
@@ -126,7 +126,7 @@ export function MatchupPanel({
         {pickButton(b, bVotes)}
       </div>
 
-      {isR32 ? (
+      {a && b ? (
         <>
           <Divider />
           <div className="flex items-center justify-between">

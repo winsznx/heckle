@@ -43,8 +43,9 @@ export default function ZeroCupBracketPage() {
   }, []);
 
   const selectedNode = R32_DEF.byId.get(selectedId) ?? null;
-  const selectedTakes = selectedNode?.matchupId
-    ? byMatchup.get(selectedNode.matchupId) ?? []
+  // Inner nodes have no matchupId but their id ("R16_1"…) is the takes key.
+  const selectedTakes = selectedNode
+    ? byMatchup.get(selectedNode.matchupId ?? selectedNode.id) ?? []
     : [];
 
   function navigate(dir: -1 | 1) {
