@@ -2,41 +2,51 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ZERO_CUP_R16, ZERO_CUP_R32_EVENT_ID } from "@heckle/shared";
+import {
+  ZERO_CUP_R32,
+  ZERO_CUP_R32_EVENT_ID,
+  ZERO_CUP_R32_RESULTS,
+} from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { RadialBracket } from "@/components/bracket/RadialBracket";
 import { MatchupPanel } from "@/components/bracket/MatchupPanel";
 import { CommitBar } from "@/components/bracket/CommitBar";
-import { R16_DEF } from "@/lib/bracket-data";
+import { R32_DEF } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
+
+// Rounds inside R32 — what a visitor predicts, now that R32 itself is settled.
+const INNER_NODES = R32_DEF.nodes.filter((n) => n.round !== R32_DEF.outerRound);
 
 export default function ZeroCupBracketPage() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  // The current live stage: the 16 that survived R32, in 8 R16 matchups. Predict
-  // R16 → champion. (R32 is settled — see the grid for those results.)
-  const state = useBracketState(eventId, R16_DEF);
-  const [selectedId, setSelectedId] = useState<string>("R16_1");
+  // Seed the settled R32 winners (locked) so they're already advanced inward on
+  // the full 32-entrant board — nothing is removed; teams move as rounds resolve.
+  const state = useBracketState(eventId, R32_DEF, ZERO_CUP_R32_RESULTS);
+  const [selectedId, setSelectedId] = useState<string>("R32_1");
+
+  const innerPicked = INNER_NODES.filter((n) => state.picks[n.id]).length;
+  const canCommit = Boolean(state.champion);
 
   const countryOf = useMemo(() => {
     const m = new Map<string, string>();
-    for (const mu of ZERO_CUP_R16.matchups) {
+    for (const mu of ZERO_CUP_R32.matchups) {
       m.set(mu.a.name, mu.a.country);
       m.set(mu.b.name, mu.b.country);
     }
     return m;
   }, []);
 
-  const selectedNode = R16_DEF.byId.get(selectedId) ?? null;
+  const selectedNode = R32_DEF.byId.get(selectedId) ?? null;
   const selectedTakes = selectedNode?.matchupId
     ? byMatchup.get(selectedNode.matchupId) ?? []
     : [];
 
   function navigate(dir: -1 | 1) {
-    const outer = R16_DEF.outerNodes;
+    const outer = R32_DEF.outerNodes;
     const idx = outer.findIndex((n) => n.id === selectedId);
     const base = idx === -1 ? 0 : idx;
     const next = (base + dir + outer.length) % outer.length;
@@ -64,32 +74,29 @@ export default function ZeroCupBracketPage() {
           Zero Cup bracket
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          The Round of 32 is settled — these are the <b>16 survivors</b>, on the
-          radial canvas. Tap any matchup to hear all three hecklers&rsquo; verified
-          calls (each a TEE-attested take, stored on 0G and committed on-chain
-          before the result), then predict the Round of 16 through to the champion
-          and commit your bracket.
+          The full 32-entrant board. R32 is settled — its 16 winners have already
+          advanced inward, and nothing leaves the bracket: teams just move ring by
+          ring as each round resolves. Tap any matchup for the three
+          hecklers&rsquo; verified calls, then predict the Round of 16 through to
+          the champion.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/proof"
-            className="inline-flex items-center gap-2 border border-rule bg-ink text-paper px-4 py-2 font-mono text-xs uppercase tracking-wide shadow-lift hover:-translate-y-px transition-transform"
-          >
-            What makes a take real? →
-          </Link>
           <Link
             href="/events/zero-cup-r32"
             className="inline-flex items-center gap-2 border border-rule bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wide hover:bg-whisper transition-colors"
           >
-            R32 results
+            Grid view
           </Link>
+          <span className="font-mono text-xs opacity-50">
+            Prefer a list? The grid is mobile-friendly.
+          </span>
         </div>
       </header>
 
       <Divider />
 
       <RadialBracket
-        def={R16_DEF}
+        def={R32_DEF}
         picks={state.picks}
         selectedId={selectedId}
         onSelect={setSelectedId}
@@ -112,10 +119,10 @@ export default function ZeroCupBracketPage() {
       <CommitBar
         eventId={eventId}
         predictionSet={state.predictionSet}
-        picked={state.outerCount}
-        totalCount={R16_DEF.outerCount}
-        roundLabel="R16"
-        canCommit={state.canCommit}
+        picked={innerPicked}
+        totalCount={INNER_NODES.length}
+        roundLabel="predictions"
+        canCommit={canCommit}
         champion={state.champion}
         onClear={state.clear}
       />

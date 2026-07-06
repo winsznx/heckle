@@ -135,9 +135,10 @@ export function RadialBracket({
           {/* Project circles. */}
           {def.outerNodes.flatMap((node) => {
             const selected = selectedId === node.id;
+            const decided = Boolean(picks[node.id]);
             return (node.contestants ?? []).map((c) => {
               const picked = picks[node.id] === c.name;
-              const showName = picked || selected;
+              const showName = (picked && !decided) || selected;
               const pos = toPercent(c.center, VIEWBOX);
               return (
                 <button
@@ -153,8 +154,8 @@ export function RadialBracket({
                 >
                   <span
                     className={`grid place-items-center rounded-full w-9 h-9 text-base transition-all ${
-                      picked
-                        ? "border-2 border-ink bg-paper"
+                      decided
+                        ? "border border-rule bg-paper opacity-25 group-hover:opacity-70"
                         : selected
                           ? "border border-ink bg-paper"
                           : "border border-rule bg-paper opacity-40 group-hover:opacity-100"
@@ -207,21 +208,28 @@ export function RadialBracket({
             );
           })}
 
-          {/* Selectable hit-target on each matchup's join point (opens takes). */}
-          {def.outerNodes.map((node) => {
-            const pos = toPercent(node.center, VIEWBOX);
+          {/* Selectable hit-target on every un-decided matchup's join point.
+              Picked nodes are re-selected via their advanced flag icon above. */}
+          {def.nodes.map((node) => {
+            if (picks[node.id]) return null;
+            const isFinal = node.round === "Final";
+            const anchor = isFinal ? { x: CENTER, y: CENTER + 46 } : node.center;
+            const pos = toPercent(anchor, VIEWBOX);
             const count = takeCount(node.matchupId ?? node.id);
+            const label = node.matchupId
+              ? `${node.label} · ${count} takes`
+              : "Predict this matchup";
             return (
               <button
                 key={`sel-${node.id}`}
                 type="button"
                 onClick={() => onSelect(node.id)}
-                aria-label={`${node.label} takes`}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full w-5 h-5 grid place-items-center font-mono text-xs transition-opacity ${
-                  selectedId === node.id ? "opacity-100" : "opacity-30 hover:opacity-100"
+                aria-label={label}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full w-5 h-5 grid place-items-center transition-opacity ${
+                  selectedId === node.id ? "opacity-100" : "opacity-40 hover:opacity-100"
                 }`}
                 style={{ left: pos.left, top: pos.top }}
-                title={`${node.label} · ${count} takes`}
+                title={label}
               >
                 <span className="w-2 h-2 rounded-full bg-ink" />
               </button>
