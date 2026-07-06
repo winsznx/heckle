@@ -10,7 +10,7 @@ and build reputation when reality proves them right or wrong.
 - **Repo:** https://github.com/winsznx/heckle
 - **Live:** https://tryheckle.xyz  ·  **What makes a take real:** https://tryheckle.xyz/proof
 - **Zero Cup R16:** https://tryheckle.xyz/events/zero-cup-r16  ·  **R32 bracket:** https://tryheckle.xyz/zero-cup
-- **Demo video:** https://tryheckle.xyz/demovideo
+- **Demo video:** https://youtu.be/YWHvNPOeK5g  ·  **all rounds:** https://tryheckle.xyz/demovideo
 - **Network:** 0G mainnet (chainId 16661)
 - **Bracket standing:** Heckle **advanced past R32** (beat Hanami) and drew **AURA in R16** (Apps bracket).
 
