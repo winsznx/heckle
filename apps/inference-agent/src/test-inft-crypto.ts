@@ -64,15 +64,19 @@ async function main(): Promise<void> {
   ok(unsealKey.length > 0 && decryptCore(blob1, aliceKey) === CORE, "old key still opens only the OLD blob (history)");
 
   console.log("4) proofs recover to expected signers (matches the contract)");
-  const dataHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(blob2)));
+  const oldHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(blob1)));
+  const newHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(blob2)));
   const targetPubkey = "0x"; // empty => receiver's eth key
   const nonceA = ethers.hexlify(ethers.toUtf8Bytes("access-nonce-1"));
   const nonceO = ethers.hexlify(ethers.toUtf8Bytes("ownership-nonce-1"));
   const sealedKeyBytes = ethers.hexlify(ethers.toUtf8Bytes(JSON.stringify(sealedBob)));
 
-  const accessSig = await signAccessProof(bob, dataHash, targetPubkey, nonceA);
+  const accessSig = await signAccessProof(bob, oldHash, targetPubkey, nonceA);
   const accessInner = ethers.keccak256(
-    ethers.solidityPacked(["bytes32", "bytes", "bytes"], [dataHash, targetPubkey, nonceA]),
+    ethers.solidityPacked(
+      ["bytes32", "bytes32", "bytes32"],
+      [oldHash, ethers.keccak256(targetPubkey), ethers.keccak256(nonceA)],
+    ),
   );
   ok(
     ethers.verifyMessage(ethers.toBeHex(accessInner, 32), accessSig).toLowerCase() ===
@@ -80,11 +84,17 @@ async function main(): Promise<void> {
     "access proof recovers to the receiver",
   );
 
-  const ownSig = await signOwnershipProof(oracle, dataHash, sealedKeyBytes, targetPubkey, nonceO);
+  const ownSig = await signOwnershipProof(oracle, oldHash, newHash, sealedKeyBytes, targetPubkey, nonceO);
   const ownInner = ethers.keccak256(
     ethers.solidityPacked(
-      ["bytes32", "bytes", "bytes", "bytes"],
-      [dataHash, sealedKeyBytes, targetPubkey, nonceO],
+      ["bytes32", "bytes32", "bytes32", "bytes32", "bytes32"],
+      [
+        oldHash,
+        newHash,
+        ethers.keccak256(sealedKeyBytes),
+        ethers.keccak256(targetPubkey),
+        ethers.keccak256(nonceO),
+      ],
     ),
   );
   ok(

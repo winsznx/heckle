@@ -52,12 +52,19 @@ contract HeckleINFT is ERC721, ERC721URIStorage, Ownable, IERC7857 {
 
     event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 dataHash);
 
+    /// @notice New characters can only mint once migration of the V1 ids is
+    ///         sealed, so a public mint can't front-run and squat tokenId 0/1/2.
+    bool public migrationSealed;
+
+    event MigrationSealed();
+
     error NotAuthorized();
     error WrongFrom();
     error ProofCountMismatch();
     error DataHashMismatch();
     error AccessAssistantMismatch();
     error EmptyData();
+    error MigrationNotSealed();
 
     constructor(address verifier_) ERC721("Heckle Characters", "HECKLE") Ownable(msg.sender) {
         require(verifier_ != address(0), "HeckleINFT: zero verifier");
@@ -84,7 +91,15 @@ contract HeckleINFT is ERC721, ERC721URIStorage, Ownable, IERC7857 {
         if (tokenId >= _nextTokenId) _nextTokenId = tokenId + 1;
     }
 
+    /// @notice Seal migration: after the V1 characters are migrated, open public
+    ///         minting. Owner-only, one-way.
+    function sealMigration() external onlyOwner {
+        migrationSealed = true;
+        emit MigrationSealed();
+    }
+
     /// @notice Mint a new character to the caller (ids continue past migration).
+    ///         Blocked until migration is sealed so it can't squat V1 ids.
     function mint(
         uint8 archetype,
         string calldata handle,
@@ -92,6 +107,7 @@ contract HeckleINFT is ERC721, ERC721URIStorage, Ownable, IERC7857 {
         string calldata tokenURI_,
         IntelligentData calldata initialData
     ) external returns (uint256 tokenId) {
+        if (!migrationSealed) revert MigrationNotSealed();
         tokenId = _nextTokenId++;
         _mintWithData(tokenId, msg.sender, archetype, handle, name, tokenURI_, initialData);
     }
@@ -140,18 +156,31 @@ contract HeckleINFT is ERC721, ERC721URIStorage, Ownable, IERC7857 {
         IntelligentData[] storage datas = _iDatas[tokenId];
         if (proofs.length == 0 || proofs.length != datas.length) revert ProofCountMismatch();
 
+        IntelligentData[] memory oldDatas = _snapshot(tokenId);
         TransferValidityProofOutput[] memory outs = _verifier.verifyTransferValidity(proofs);
 
         address assistant = _delegate[to] == address(0) ? to : _delegate[to];
         bytes[] memory sealedKeys = new bytes[](outs.length);
         for (uint256 i = 0; i < outs.length; i++) {
+            // Bind the proof to THIS token's current data (blocks cross-token /
+            // post-transfer replay), then rotate to the re-encrypted payload.
             if (outs[i].dataHash != datas[i].dataHash) revert DataHashMismatch();
             if (outs[i].accessAssistant != assistant) revert AccessAssistantMismatch();
+            // The sender's old key no longer decrypts the current payload — the
+            // commitment now points at the re-encrypted blob. dataDescription is
+            // cleared; the ciphertext URI derives from the dataHash (0G root).
+            datas[i].dataHash = outs[i].newDataHash;
+            datas[i].dataDescription = "";
             sealedKeys[i] = outs[i].sealedKey;
         }
 
         _transfer(from, to, tokenId);
         emit PublishedSealedKey(to, tokenId, sealedKeys);
+        emit Updated(tokenId, oldDatas, _snapshot(tokenId));
+    }
+
+    function _snapshot(uint256 tokenId) private view returns (IntelligentData[] memory) {
+        return _iDatas[tokenId];
     }
 
     /// @notice Owner re-points a token's intelligent data (e.g. after a memory

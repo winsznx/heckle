@@ -100,23 +100,34 @@ export function unsealKey(recipientPrivateKey: string, sealed: SealedKey): Buffe
   return Buffer.concat([decipher.update(Buffer.from(sealed.ct, "hex")), decipher.final()]);
 }
 
-/** bytes32 hex string of the packed inner hash, EIP-191 signed by the contract. */
+// Each dynamic field is hashed independently before packing so adjacent bytes
+// can't be re-sliced — mirrors HeckleDataVerifier byte-for-byte.
 function accessInner(dataHash: string, targetPubkey: string, nonce: string): string {
   return ethers.keccak256(
-    ethers.solidityPacked(["bytes32", "bytes", "bytes"], [dataHash, targetPubkey, nonce]),
+    ethers.solidityPacked(
+      ["bytes32", "bytes32", "bytes32"],
+      [dataHash, ethers.keccak256(targetPubkey), ethers.keccak256(nonce)],
+    ),
   );
 }
 
 function ownershipInner(
   dataHash: string,
+  newDataHash: string,
   sealedKey: string,
   targetPubkey: string,
   nonce: string,
 ): string {
   return ethers.keccak256(
     ethers.solidityPacked(
-      ["bytes32", "bytes", "bytes", "bytes"],
-      [dataHash, sealedKey, targetPubkey, nonce],
+      ["bytes32", "bytes32", "bytes32", "bytes32", "bytes32"],
+      [
+        dataHash,
+        newDataHash,
+        ethers.keccak256(sealedKey),
+        ethers.keccak256(targetPubkey),
+        ethers.keccak256(nonce),
+      ],
     ),
   );
 }
@@ -145,13 +156,16 @@ export function signAccessProof(
   return signInner(receiver, accessInner(dataHash, targetPubkey, nonce));
 }
 
-/** Oracle attestation that the data key was re-sealed to the receiver. */
+/** Oracle attestation that the data key was re-sealed to the receiver.
+ *  `dataHash` is the token's current (old) commitment; `newDataHash` is the
+ *  re-encrypted payload the transfer rotates to. */
 export function signOwnershipProof(
   oracle: MessageSigner,
   dataHash: string,
+  newDataHash: string,
   sealedKey: string,
   targetPubkey: string,
   nonce: string,
 ): Promise<string> {
-  return signInner(oracle, ownershipInner(dataHash, sealedKey, targetPubkey, nonce));
+  return signInner(oracle, ownershipInner(dataHash, newDataHash, sealedKey, targetPubkey, nonce));
 }

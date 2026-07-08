@@ -70,6 +70,7 @@ contract HeckleDataVerifier is IERC7857DataVerifier, Ownable {
         if (proof.accessProof.dataHash != proof.ownershipProof.dataHash) revert DataHashMismatch();
 
         output.dataHash = proof.accessProof.dataHash;
+        output.newDataHash = proof.ownershipProof.newDataHash;
         output.wantedKey = proof.accessProof.targetPubkey;
         output.accessProofNonce = proof.accessProof.nonce;
         output.targetPubkey = proof.ownershipProof.targetPubkey;
@@ -80,16 +81,30 @@ contract HeckleDataVerifier is IERC7857DataVerifier, Ownable {
         if (!_verifyOwnership(proof.ownershipProof)) revert InvalidOwnershipProof();
     }
 
+    /// @dev Each dynamic field is hashed independently before packing so adjacent
+    ///      `bytes` can't be re-sliced to forge a distinct nonce over the same
+    ///      signature (audit fix). Fixed-size bytes32 fields stay inline.
     function _recoverAccess(AccessProof calldata ap) private pure returns (address assistant) {
-        bytes32 digest = _ethHex(keccak256(abi.encodePacked(ap.dataHash, ap.targetPubkey, ap.nonce)));
+        bytes32 digest = _ethHex(
+            keccak256(abi.encodePacked(ap.dataHash, keccak256(ap.targetPubkey), keccak256(ap.nonce)))
+        );
         assistant = ECDSA.recover(digest, ap.proof);
         if (assistant == address(0)) revert InvalidAccessAssistant();
     }
 
     function _verifyOwnership(OwnershipProof calldata op) private view returns (bool) {
         if (op.oracleType != OracleType.TEE) return false; // ZKP reserved
-        bytes32 digest =
-            _ethHex(keccak256(abi.encodePacked(op.dataHash, op.sealedKey, op.targetPubkey, op.nonce)));
+        bytes32 digest = _ethHex(
+            keccak256(
+                abi.encodePacked(
+                    op.dataHash,
+                    op.newDataHash,
+                    keccak256(op.sealedKey),
+                    keccak256(op.targetPubkey),
+                    keccak256(op.nonce)
+                )
+            )
+        );
         return ECDSA.recover(digest, op.proof) == teeOracle;
     }
 

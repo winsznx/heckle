@@ -31,9 +31,13 @@ struct AccessProof {
 }
 
 /// @notice Oracle attestation that the data key was re-sealed to the receiver.
+/// @param dataHash    The token's CURRENT (old) commitment — binds the proof to
+///                    the exact token being transferred.
+/// @param newDataHash The re-encrypted payload's commitment to rotate to.
 struct OwnershipProof {
     OracleType oracleType;
     bytes32 dataHash;
+    bytes32 newDataHash;
     bytes sealedKey;
     bytes targetPubkey;
     bytes nonce;
@@ -47,6 +51,7 @@ struct TransferValidityProof {
 
 struct TransferValidityProofOutput {
     bytes32 dataHash;
+    bytes32 newDataHash;
     bytes sealedKey;
     bytes targetPubkey;
     bytes wantedKey;

@@ -27,6 +27,8 @@ contract HeckleINFTTest is Test {
     uint256 internal malloryPk;
 
     bytes32 internal constant DATA_HASH = keccak256("encrypted-personality-ciphertext");
+    // The re-encrypted payload committed on transfer (new ciphertext -> new hash).
+    bytes32 internal constant NEW_HASH = keccak256("reencrypted-personality-ciphertext");
     string internal constant DATA_URI = "https://indexer-storage-turbo.0g.ai/file?root=0xcafe";
     string internal constant CARD_URI = "https://indexer-storage-turbo.0g.ai/file?root=0xcard";
 
@@ -64,24 +66,47 @@ contract HeckleINFTTest is Test {
         pure
         returns (TransferValidityProof memory)
     {
+        return _proofFor(DATA_HASH, accessPk, oPk, nonce, sealedKey);
+    }
+
+    function _proofFor(
+        bytes32 oldHash,
+        uint256 accessPk,
+        uint256 oPk,
+        bytes memory nonce,
+        bytes memory sealedKey
+    ) internal pure returns (TransferValidityProof memory) {
         bytes memory pubkey = "";
         // Access and ownership proofs carry distinct nonces (they're independently
         // replay-tracked); deriving both from the base keeps replay tests meaningful.
         bytes memory aNonce = abi.encodePacked(nonce, bytes1(0x01));
         bytes memory oNonce = abi.encodePacked(nonce, bytes1(0x02));
+        // dataHash = the token's CURRENT (old) commitment (binds the proof to the
+        // token); newDataHash = the re-encrypted payload to rotate to. Each dynamic
+        // field is hashed independently — mirrors the contract digest.
         AccessProof memory ap = AccessProof({
-            dataHash: DATA_HASH,
+            dataHash: oldHash,
             targetPubkey: pubkey,
             nonce: aNonce,
-            proof: _sign(accessPk, keccak256(abi.encodePacked(DATA_HASH, pubkey, aNonce)))
+            proof: _sign(
+                accessPk, keccak256(abi.encodePacked(oldHash, keccak256(pubkey), keccak256(aNonce)))
+            )
         });
         OwnershipProof memory op = OwnershipProof({
             oracleType: OracleType.TEE,
-            dataHash: DATA_HASH,
+            dataHash: oldHash,
+            newDataHash: NEW_HASH,
             sealedKey: sealedKey,
             targetPubkey: pubkey,
             nonce: oNonce,
-            proof: _sign(oPk, keccak256(abi.encodePacked(DATA_HASH, sealedKey, pubkey, oNonce)))
+            proof: _sign(
+                oPk,
+                keccak256(
+                    abi.encodePacked(
+                        oldHash, NEW_HASH, keccak256(sealedKey), keccak256(pubkey), keccak256(oNonce)
+                    )
+                )
+            )
         });
         return TransferValidityProof({accessProof: ap, ownershipProof: op});
     }
@@ -111,13 +136,33 @@ contract HeckleINFTTest is Test {
         assertEq(inft.totalMinted(), 3);
     }
 
-    function test_MintContinuesAfterMigration() public {
+    function test_MintBlockedUntilMigrationSealed() public {
+        _migrate(0, alice);
+        // Audit fix: public mint can't front-run and squat V1 ids.
+        vm.prank(bob);
+        vm.expectRevert(HeckleINFT.MigrationNotSealed.selector);
+        inft.mint(1, "new", "New One", CARD_URI, _data());
+    }
+
+    function test_MintContinuesAfterMigrationSealed() public {
         _migrate(0, alice);
         _migrate(1, alice);
+        inft.sealMigration();
         vm.prank(bob);
         uint256 id = inft.mint(1, "new", "New One", CARD_URI, _data());
         assertEq(id, 2);
         assertEq(inft.ownerOf(2), bob);
+    }
+
+    function test_ITransferFrom_RevertsWhenProofNotBoundToToken() public {
+        _migrate(0, alice);
+        // Proof built for a DIFFERENT token's (old) data hash — valid signatures,
+        // but the NFT rejects it because it doesn't match token 0's stored data.
+        TransferValidityProof[] memory proofs = new TransferValidityProof[](1);
+        proofs[0] = _proofFor(keccak256("some-other-token-data"), bobPk, oraclePk, "n", hex"01");
+        vm.prank(alice);
+        vm.expectRevert(HeckleINFT.DataHashMismatch.selector);
+        inft.iTransferFrom(alice, bob, 0, proofs);
     }
 
     function test_SupportsRealErc7857InterfaceId() public view {
@@ -150,6 +195,9 @@ contract HeckleINFTTest is Test {
         inft.iTransferFrom(alice, bob, 0, proofs);
 
         assertEq(inft.ownerOf(0), bob, "token must move to bob");
+        // The on-chain commitment rotates to the re-encrypted payload — the old
+        // ciphertext (which alice's key could open) is no longer the current data.
+        assertEq(inft.intelligentDatasOf(0)[0].dataHash, NEW_HASH, "dataHash must rotate on transfer");
     }
 
     function test_ITransferFrom_RevertsOnNonOracleOwnershipProof() public {
