@@ -22,6 +22,7 @@ const ALL_LINKS = [
   { href: "/events/1", label: "Events" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/proof", label: "Proof" },
+  { href: "/transfer-guarantees", label: "Transfer guarantees" },
   { href: "/judge", label: "For judges" },
   { href: "/characters", label: "Characters" },
   { href: "/dashboard", label: "Dashboard" },

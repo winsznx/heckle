@@ -145,6 +145,12 @@ export default function ProofPage() {
           keeps it, the Chain settles it, and the INFT owns it. Strip any one and
           the proof breaks.
         </p>
+        <Link
+          href="/transfer-guarantees"
+          className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity"
+        >
+          What an ERC-7857 transfer actually guarantees →
+        </Link>
       </div>
     </div>
   );

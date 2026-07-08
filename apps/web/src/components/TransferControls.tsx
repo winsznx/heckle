@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { isAddress, type Hex } from "viem";
 import { Button } from "@/components/ui/Button";
@@ -67,9 +68,16 @@ export function TransferControls({
       <h2 className="font-display text-2xl font-black">Transfer</h2>
       <Card className="p-6 flex flex-col gap-4">
         <p className="font-body opacity-80 max-w-prose">
-          Send this character to another wallet. Its full take history and earned
-          reputation transfer with the token — you&rsquo;re handing over the whole
-          asset, brain and record.
+          Send this character to another wallet. Ownership and the tokenId-keyed
+          record — take history + earned reputation — move with the token. Exactly
+          what transfers, and what stays public, is spelled out in{" "}
+          <Link
+            href="/transfer-guarantees"
+            className="underline underline-offset-2 hover:opacity-100 transition-opacity"
+          >
+            Transfer guarantees
+          </Link>
+          .
         </p>
         {stage.phase === "done" ? (
           <div className="flex flex-col gap-2">

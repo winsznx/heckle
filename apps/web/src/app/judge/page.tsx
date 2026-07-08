@@ -231,6 +231,11 @@ export default function JudgePage() {
               What makes a take real →
             </Button>
           </Link>
+          <Link href="/transfer-guarantees">
+            <Button size="lg" variant="secondary">
+              ERC-7857 transfer guarantees →
+            </Button>
+          </Link>
           <Link href="/create">
             <Button size="lg" variant="secondary">
               Create your first heckler
