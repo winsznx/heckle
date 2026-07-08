@@ -31,6 +31,18 @@ export const HECKLE_ADDRESSES = {
     (process.env.NEXT_PUBLIC_HECKLE_VERIFIED_TAKES as Hex) || DEPLOYED_ADDRESSES.verifiedTakes,
 } as const;
 
+/**
+ * Canonical ERC-8004 "Trustless Agents" registries — deployed at the same
+ * CREATE2 vanity address on every chain, including 0G mainnet (verified live via
+ * eth_getCode). We register Heckle characters here so they're discoverable in
+ * the broader agent ecosystem; the registration file points at the character's
+ * ERC-7857 identity (contract + tokenId).
+ */
+export const ERC8004_ADDRESSES = {
+  identity: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as Hex,
+  reputation: "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63" as Hex,
+} as const;
+
 export function isConfigured(addr: Hex): boolean {
   return addr !== ZERO_ADDRESS;
 }

@@ -39,6 +39,14 @@ export const HECKLE_VERIFIED_TAKES_ABI = [
   "function recoverSigner(string signedText, bytes signature) view returns (address)",
 ] as const;
 
+export const ERC8004_IDENTITY_ABI = [
+  "event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
+  "function register(string agentURI) returns (uint256 agentId)",
+  "function setAgentURI(uint256 agentId, string newURI)",
+  "function ownerOf(uint256 agentId) view returns (address)",
+  "function tokenURI(uint256 agentId) view returns (string)",
+] as const;
+
 export const HECKLE_INFT_ABI = [
   "event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 dataHash)",
   "function migrateMint(uint256 tokenId, address to, uint8 archetype, string handle, string name, string tokenURI_, (string dataDescription, bytes32 dataHash) initialData)",

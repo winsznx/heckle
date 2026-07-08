@@ -9,6 +9,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { TakeCard } from "@/components/TakeCard";
 import { TransferControls } from "@/components/TransferControls";
+import { Erc8004Badge } from "@/components/Erc8004Badge";
 import {
   CharacterPortrait,
   hasPortrait,
@@ -284,6 +285,7 @@ export default function CharacterPage({
           <div className="flex flex-wrap items-center gap-2">
             <Pill tone="filled">{arch.label}</Pill>
             <span className="font-mono text-xs opacity-60">Token #{tokenId}</span>
+            <Erc8004Badge tokenId={Number(tokenId)} />
           </div>
           <h1 className="font-display font-black text-5xl leading-none">
             {data.name}
