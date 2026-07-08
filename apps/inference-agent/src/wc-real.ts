@@ -7,8 +7,9 @@ import {
   WORLD_CUP_EVENT_ID,
 } from "@heckle/shared";
 import { requireEnv, env } from "./env.js";
-import { HECKLE_EVENTS_ABI, HECKLE_TAKES_ABI } from "./abis.js";
+import { HECKLE_EVENTS_ABI, HECKLE_VERIFIED_TAKES_ABI } from "./abis.js";
 import { uploadJson } from "./zg-storage.js";
+import { commitVerifiedTake } from "./commit-verified-take.js";
 import {
   ensureLedger,
   generateTake,
@@ -64,7 +65,6 @@ async function main(): Promise<void> {
   const provider = new ethers.JsonRpcProvider(cfg.ZG_RPC_URL);
   const signer = new ethers.Wallet(cfg.AGENT_PRIVATE_KEY, provider);
   const events = new ethers.Contract(cfg.HECKLE_EVENTS, HECKLE_EVENTS_ABI, signer);
-  const takes = new ethers.Contract(cfg.HECKLE_TAKES, HECKLE_TAKES_ABI, signer);
   const eventId = BigInt(WORLD_CUP_EVENT_ID);
   log("wallet:", signer.address, "| event:", eventId.toString());
 
@@ -122,10 +122,17 @@ async function main(): Promise<void> {
           },
           inferenceAttestation: t.attestation,
         });
-        await (await takes.commitTake(PUNDIT_ID, eventId, root, KIND_PREDICTION)).wait();
+        const res = await commitVerifiedTake(signer, {
+          characterId: PUNDIT_ID,
+          eventId,
+          matchupId: String(f.matchId),
+          takeRoot: root,
+          kind: KIND_PREDICTION,
+          attestation: t.attestation,
+        });
         done = true;
         log(
-          `${f.matchId} ${a} vs ${b}: ${winner} | ${t.text.replace(/\s+/g, " ")} | valid=${t.attestation?.valid ?? false}`,
+          `${f.matchId} ${a} vs ${b}: ${winner} [${res.status}] | ${t.text.replace(/\s+/g, " ")} | valid=${t.attestation?.valid ?? false}`,
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

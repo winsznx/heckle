@@ -22,8 +22,10 @@ interface TakeCardProps {
   takeRoot: string;
   /** Commit tx hash → chainscan. */
   txHash?: string;
-  /** Attestation valid flag. undefined = unknown (no badge). */
+  /** Attestation valid flag (off-chain replayable). undefined = unknown (no badge). */
   verified?: boolean;
+  /** Committed to HeckleVerifiedTakes — the contract recovered + accepted the TEE signer. */
+  contractVerified?: boolean;
   triggerLabel?: string;
   characterId?: string;
   characterName?: string;
@@ -41,6 +43,7 @@ export function TakeCard({
   takeRoot,
   txHash,
   verified,
+  contractVerified,
   triggerLabel,
   characterId,
   characterName,
@@ -99,8 +102,10 @@ export function TakeCard({
           {txHash ? (
             <HashLink type="tx_hash" value={txHash} label="Committed" />
           ) : null}
-          {verified === undefined ? null : verified ? (
-            <Pill tone="filled">Verified ✓</Pill>
+          {contractVerified ? (
+            <Pill tone="filled">Contract-verified ✓</Pill>
+          ) : verified === undefined ? null : verified ? (
+            <Pill>Replayable ✓</Pill>
           ) : (
             <Pill>Verification pending</Pill>
           )}

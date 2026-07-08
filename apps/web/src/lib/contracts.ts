@@ -5,6 +5,7 @@ import {
   heckleEventsAbi,
   heckleResolverAbi,
   heckleTakesAbi,
+  heckleVerifiedTakesAbi,
   heckleVotesAbi,
 } from "./abis";
 
@@ -21,6 +22,11 @@ export const eventsContract = {
 export const takesContract = {
   address: HECKLE_ADDRESSES.takes,
   abi: heckleTakesAbi,
+} as const;
+
+export const verifiedTakesContract = {
+  address: HECKLE_ADDRESSES.verifiedTakes,
+  abi: heckleVerifiedTakesAbi,
 } as const;
 
 export const bracketsContract = {

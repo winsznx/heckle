@@ -30,6 +30,22 @@ export const HECKLE_TAKES_ABI = [
   "function reputationOf(uint256 characterId) view returns (tuple(uint64 takesGenerated, uint64 votesReceived, uint64 predictionsCorrect, uint64 predictionsTotal, uint256 weightedScore, uint64 firstTakeAt, uint64 lastTakeAt))",
 ] as const;
 
+export const HECKLE_VERIFIED_TAKES_ABI = [
+  "event VerifiedTakeCommitted(uint256 indexed takeId, uint256 indexed characterId, uint256 indexed eventId, bytes32 matchupId, bytes32 takeRoot, address signer, uint8 kind, uint64 timestamp)",
+  "function commitVerifiedTake(uint256 characterId, uint256 eventId, bytes32 matchupId, bytes32 takeRoot, uint8 kind, string signedText, bytes signature) returns (uint256 takeId)",
+  "function isRootVerified(bytes32 takeRoot) view returns (bool)",
+  "function takeIdOfRoot(bytes32 takeRoot) view returns (uint256)",
+  "function verifiedCount(uint256 characterId) view returns (uint64)",
+  "function recoverSigner(string signedText, bytes signature) view returns (address)",
+] as const;
+
+export const HECKLE_ATTESTATION_REGISTRY_ABI = [
+  "event AttestorRegistered(address indexed signer, address indexed provider, string model)",
+  "function isTrusted(address signer) view returns (bool)",
+  "function registerAttestor(address signer, address provider, string model)",
+  "function syncFromOG(address provider) returns (address signer)",
+] as const;
+
 export const HECKLE_BRACKETS_ABI = [
   "event BracketCommitted(uint256 indexed bracketId, uint256 indexed eventId, address indexed submitter, bytes32 predictionsRoot, uint64 timestamp)",
   "function commitBracket(uint256 eventId, bytes32 predictionsRoot) returns (uint256 bracketId)",

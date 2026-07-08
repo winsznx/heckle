@@ -194,6 +194,38 @@ export const heckleTakesAbi = [
   },
 ] as const;
 
+export const heckleVerifiedTakesAbi = [
+  {
+    type: "event",
+    name: "VerifiedTakeCommitted",
+    inputs: [
+      { name: "takeId", type: "uint256", indexed: true },
+      { name: "characterId", type: "uint256", indexed: true },
+      { name: "eventId", type: "uint256", indexed: true },
+      { name: "matchupId", type: "bytes32", indexed: false },
+      { name: "takeRoot", type: "bytes32", indexed: false },
+      { name: "signer", type: "address", indexed: false },
+      { name: "kind", type: "uint8", indexed: false },
+      { name: "timestamp", type: "uint64", indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "function",
+    name: "isRootVerified",
+    stateMutability: "view",
+    inputs: [{ name: "takeRoot", type: "bytes32" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "verifiedCount",
+    stateMutability: "view",
+    inputs: [{ name: "characterId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint64" }],
+  },
+] as const;
+
 export const heckleBracketsAbi = [
   {
     type: "event",

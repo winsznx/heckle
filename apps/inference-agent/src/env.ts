@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { ZG_RPC_URL, ZG_STORAGE_INDEXER } from "@heckle/shared";
+import { ZG_RPC_URL, ZG_STORAGE_INDEXER, DEPLOYED_ADDRESSES } from "@heckle/shared";
 
 export interface AgentEnv {
   AGENT_PRIVATE_KEY?: string;
@@ -8,10 +8,13 @@ export interface AgentEnv {
   HECKLE_CHARACTERS?: string;
   HECKLE_EVENTS?: string;
   HECKLE_TAKES?: string;
+  HECKLE_VERIFIED_TAKES: string;
   HECKLE_RESOLVER?: string;
   FOOTBALL_DATA_TOKEN?: string;
   ZG_COMPUTE_PROVIDER?: string;
   ZG_COMPUTE_MODEL?: string;
+  /** Mirror verified commits to the legacy HeckleTakes for UI back-compat. */
+  MIRROR_LEGACY_TAKES: boolean;
 }
 
 export const env: AgentEnv = {
@@ -21,10 +24,13 @@ export const env: AgentEnv = {
   HECKLE_CHARACTERS: process.env.HECKLE_CHARACTERS,
   HECKLE_EVENTS: process.env.HECKLE_EVENTS,
   HECKLE_TAKES: process.env.HECKLE_TAKES,
+  HECKLE_VERIFIED_TAKES:
+    process.env.HECKLE_VERIFIED_TAKES || DEPLOYED_ADDRESSES.verifiedTakes,
   HECKLE_RESOLVER: process.env.HECKLE_RESOLVER,
   FOOTBALL_DATA_TOKEN: process.env.FOOTBALL_DATA_TOKEN,
   ZG_COMPUTE_PROVIDER: process.env.ZG_COMPUTE_PROVIDER,
   ZG_COMPUTE_MODEL: process.env.ZG_COMPUTE_MODEL,
+  MIRROR_LEGACY_TAKES: process.env.HECKLE_MIRROR_LEGACY_TAKES === "true",
 };
 
 /** Env vars required for the agent to commit takes on-chain. */

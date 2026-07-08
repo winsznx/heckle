@@ -5,6 +5,7 @@ import { archetype } from "@heckle/shared";
 import {
   charactersContract,
   takesContract,
+  verifiedTakesContract,
   contractConfigured,
 } from "./contracts";
 import {
@@ -26,7 +27,13 @@ export interface MatchTake {
   timestamp: bigint;
   takeRoot: `0x${string}`;
   txHash: string;
+  /** Off-chain: the stored attestation carries a signature (replayable). */
   verified: boolean;
+  /** On-chain: committed to HeckleVerifiedTakes — the contract recovered and
+   *  accepted the 0G TEE signer. Strictly stronger than `verified`. */
+  contractVerified: boolean;
+  /** The TEE signer the contract recovered, when contractVerified. */
+  onchainSigner: string | null;
   text: string | null;
 }
 
@@ -58,6 +65,29 @@ export function useZeroCupTakes(eventId: number | null): {
         toBlock: "latest",
       });
 
+      // Contract-verification annotation is best-effort: takeRoot -> on-chain TEE
+      // signer, read from HeckleVerifiedTakes. It must NEVER gate the take list —
+      // if this query fails, takes still render (just without the verified badge).
+      const verifiedByRoot = new Map<string, string>();
+      try {
+        const verifiedLogs = await publicClient.getLogs({
+          address: verifiedTakesContract.address,
+          event: verifiedTakesContract.abi[0],
+          args: { eventId: BigInt(eventId) },
+          fromBlock: FROM_BLOCK,
+          toBlock: "latest",
+        });
+        for (const vl of verifiedLogs) {
+          const root = vl.args.takeRoot;
+          const signer = vl.args.signer;
+          if (typeof root === "string" && typeof signer === "string") {
+            verifiedByRoot.set(root.toLowerCase(), signer);
+          }
+        }
+      } catch {
+        // best-effort annotation only
+      }
+
       const out = await Promise.all(
         logs.map(async (log) => {
           const takeId = log.args.takeId;
@@ -87,6 +117,8 @@ export function useZeroCupTakes(eventId: number | null): {
             takeRoot: root as `0x${string}`,
             txHash: String(log.transactionHash ?? ""),
             verified: blob?.inferenceAttestation?.valid === true,
+            contractVerified: verifiedByRoot.has(root.toLowerCase()),
+            onchainSigner: verifiedByRoot.get(root.toLowerCase()) ?? null,
             text: blob?.text ?? null,
           } satisfies MatchTake;
         }),

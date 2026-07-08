@@ -10,6 +10,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { HashLink } from "@/components/HashLink";
 import { TeeReplay } from "@/components/TeeReplay";
+import { ContractVerifiedBadge } from "@/components/ContractVerifiedBadge";
 import { type InferenceAttestation } from "@/lib/storage";
 
 type Blob = Record<string, unknown>;
@@ -61,7 +62,7 @@ function CopyUriButton({ root }: { root: string }) {
   );
 }
 
-function AttestationPanel({ att }: { att: InferenceAttestation }) {
+function AttestationPanel({ att, root }: { att: InferenceAttestation; root: string }) {
   if (!att.signature) return null;
   const valid = att.valid === true;
   const match =
@@ -107,11 +108,12 @@ function AttestationPanel({ att }: { att: InferenceAttestation }) {
           signer={att.signer}
         />
       ) : null}
+      <ContractVerifiedBadge root={root} />
     </Card>
   );
 }
 
-function TakeView({ blob }: { blob: Blob }) {
+function TakeView({ blob, root }: { blob: Blob; root: string }) {
   const text = str(blob.text);
   const kind = str(blob.kind);
   const characterId = str(blob.characterId);
@@ -145,7 +147,7 @@ function TakeView({ blob }: { blob: Blob }) {
           {prediction ? <span>Prediction: {prediction}</span> : null}
         </div>
       </div>
-      {att ? <AttestationPanel att={att} /> : null}
+      {att ? <AttestationPanel att={att} root={root} /> : null}
     </div>
   );
 }
@@ -319,7 +321,7 @@ export default function StoragePage({
     const kind = classify(blob);
     body =
       kind === "take" ? (
-        <TakeView blob={blob} />
+        <TakeView blob={blob} root={root} />
       ) : kind === "personality" ? (
         <PersonalityView blob={blob} />
       ) : kind === "event" ? (

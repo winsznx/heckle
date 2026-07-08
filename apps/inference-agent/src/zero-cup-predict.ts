@@ -13,9 +13,10 @@ import { requireEnv } from "./env.js";
 import {
   HECKLE_CHARACTERS_ABI,
   HECKLE_EVENTS_ABI,
-  HECKLE_TAKES_ABI,
+  HECKLE_VERIFIED_TAKES_ABI,
 } from "./abis.js";
-import { uploadJson, downloadJson } from "./zg-storage.js";
+import { uploadJson } from "./zg-storage.js";
+import { commitVerifiedTake, matchupToBytes32 } from "./commit-verified-take.js";
 import {
   ensureLedger,
   generateTake,
@@ -109,7 +110,7 @@ async function main(): Promise<void> {
 
   const characters = new ethers.Contract(env.HECKLE_CHARACTERS, HECKLE_CHARACTERS_ABI, signer);
   const events = new ethers.Contract(env.HECKLE_EVENTS, HECKLE_EVENTS_ABI, signer);
-  const takes = new ethers.Contract(env.HECKLE_TAKES, HECKLE_TAKES_ABI, signer);
+  const verified = new ethers.Contract(env.HECKLE_VERIFIED_TAKES, HECKLE_VERIFIED_TAKES_ABI, signer);
 
   // 1. Resolve / mint the 3 characters (idempotent by handle).
   const mintedLogs = await characters.queryFilter(
@@ -180,22 +181,18 @@ async function main(): Promise<void> {
     }
   }
 
-  // 3. Existing (char, matchup) predictions to skip.
+  // 3. Existing (char, matchup) predictions to skip — read from the verified
+  //    source of truth. The event carries matchupId directly (bytes32), so no
+  //    blob download is needed for idempotency.
   const done = new Set<string>();
-  const takeLogs = await takes.queryFilter(
-    takes.filters.TakeCommitted(null, null, EVENT_ID),
+  const verifiedLogs = await verified.queryFilter(
+    verified.filters.VerifiedTakeCommitted(null, null, EVENT_ID),
     36996000,
     "latest",
   );
-  for (const lg of takeLogs) {
+  for (const lg of verifiedLogs) {
     const args = (lg as ethers.EventLog).args;
-    const cid = (args.characterId as bigint).toString();
-    try {
-      const blob = (await downloadJson(String(args.takeRoot))) as { matchupId?: string };
-      if (blob?.matchupId) done.add(`${cid}:${blob.matchupId}`);
-    } catch {
-      /* skip */
-    }
+    done.add(`${(args.characterId as bigint).toString()}:${String(args.matchupId)}`);
   }
 
   // 4. Broker.
@@ -212,7 +209,7 @@ async function main(): Promise<void> {
   let failed = 0;
   for (const c of roster) {
     for (const m of matchups) {
-      if (!force && done.has(`${c.id}:${m.id}`)) {
+      if (!force && done.has(`${c.id}:${matchupToBytes32(m.id)}`)) {
         skipped++;
         continue;
       }
@@ -246,8 +243,22 @@ async function main(): Promise<void> {
           triggeringEvent: { label: `${m.label}: ${m.a.name} vs ${m.b.name}`, timestamp: 0 },
           inferenceAttestation: chosen.attestation,
         });
-        await (await takes.commitTake(c.id, EVENT_ID, root, KIND_PREDICTION)).wait();
-        generated++;
+        const res = await commitVerifiedTake(signer, {
+          characterId: c.id,
+          eventId: EVENT_ID,
+          matchupId: m.id,
+          takeRoot: root,
+          kind: KIND_PREDICTION,
+          attestation: chosen.attestation,
+        });
+        if (res.status === "committed") {
+          generated++;
+        } else if (res.status === "already") {
+          skipped++;
+        } else {
+          failed++;
+          log(`  SKIPPED (unverified attestation) ${m.id} #${c.id}`);
+        }
       } catch (err) {
         failed++;
         log(`  ERROR ${m.id} #${c.id}:`, err instanceof Error ? err.message : err);
