@@ -26,3 +26,7 @@ packages/contracts/broadcast/
 
 # Internal planning / scripts — not for the public repo
 internal/
+
+# ERC-7857 data-key keystore (never commit)
+apps/inference-agent/.inft-keys.json
+.inft-keys.json

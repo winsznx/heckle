@@ -39,6 +39,17 @@ export const HECKLE_VERIFIED_TAKES_ABI = [
   "function recoverSigner(string signedText, bytes signature) view returns (address)",
 ] as const;
 
+export const HECKLE_INFT_ABI = [
+  "event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 dataHash)",
+  "function migrateMint(uint256 tokenId, address to, uint8 archetype, string handle, string name, string tokenURI_, (string dataDescription, bytes32 dataHash) initialData)",
+  "function sealMigration()",
+  "function migrationSealed() view returns (bool)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+  "function characterOf(uint256 tokenId) view returns (tuple(uint8 archetype, string handle, string name, address creator, uint64 createdAt))",
+  "function intelligentDatasOf(uint256 tokenId) view returns (tuple(string dataDescription, bytes32 dataHash)[])",
+  "function totalMinted() view returns (uint256)",
+] as const;
+
 export const HECKLE_ATTESTATION_REGISTRY_ABI = [
   "event AttestorRegistered(address indexed signer, address indexed provider, string model)",
   "function isTrusted(address signer) view returns (bool)",
