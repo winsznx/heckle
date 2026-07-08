@@ -11,8 +11,8 @@ const INFT = process.env.NEXT_PUBLIC_HECKLE_INFT;
 
 const CHARACTERS: Record<string, { name: string; description: string }> = {
   "0": { name: "The Pundit", description: "Cold, technical analyst. Never hedges; weights demo polish and product-market fit." },
-  "1": { name: "The Hater", description: "Bitter ex-player turned analyst. Sees every weakness; predicts what teams get wrong." },
-  "2": { name: "The Optimist", description: "Believes every team is talented. Backs praise with a specific technical observation." },
+  "3": { name: "The Hater", description: "Bitter ex-player turned analyst. Sees every weakness; predicts what teams get wrong." },
+  "4": { name: "The Optimist", description: "Believes every team is talented. Backs praise with a specific technical observation." },
 };
 
 export async function GET(

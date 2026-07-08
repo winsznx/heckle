@@ -22,8 +22,8 @@ const WEB_BASE = process.env.HECKLE_WEB_BASE || "https://tryheckle.xyz";
 
 const CHARACTERS: { tokenId: number; name: string; description: string; slug: string }[] = [
   { tokenId: 0, name: "The Pundit", slug: "the-pundit", description: "Cold, technical analyst. Never hedges; weights demo polish and product-market fit." },
-  { tokenId: 1, name: "The Hater", slug: "the-hater", description: "Bitter ex-player turned analyst. Sees every weakness; predicts what teams get wrong." },
-  { tokenId: 2, name: "The Optimist", slug: "the-optimist", description: "Believes every team is talented. Backs praise with a specific technical observation." },
+  { tokenId: 3, name: "The Hater", slug: "the-hater", description: "Bitter ex-player turned analyst. Sees every weakness; predicts what teams get wrong." },
+  { tokenId: 4, name: "The Optimist", slug: "the-optimist", description: "Believes every team is talented. Backs praise with a specific technical observation." },
 ];
 
 function log(...a: unknown[]): void {

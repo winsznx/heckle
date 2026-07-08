@@ -3,6 +3,7 @@ import {
   heckleBracketsAbi,
   heckleCharactersAbi,
   heckleEventsAbi,
+  heckleInftAbi,
   heckleResolverAbi,
   heckleTakesAbi,
   heckleVerifiedTakesAbi,
@@ -27,6 +28,11 @@ export const takesContract = {
 export const verifiedTakesContract = {
   address: HECKLE_ADDRESSES.verifiedTakes,
   abi: heckleVerifiedTakesAbi,
+} as const;
+
+export const inftContract = {
+  address: HECKLE_ADDRESSES.inft,
+  abi: heckleInftAbi,
 } as const;
 
 export const bracketsContract = {

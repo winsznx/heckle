@@ -15,7 +15,18 @@ export const DEPLOYED_ADDRESSES = {
   resolver: "0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3" as Hex,
   attestationRegistry: "0x8e6213269b003DD6f0B01401ACE1160AF1645403" as Hex,
   verifiedTakes: "0x39c138842E89B9f5935C0B050CE2dA86F21c88dF" as Hex,
+  // Real ERC-7857 layer. The flagship characters (tokenIds 0/3/4) live here;
+  // user characters 1/2 stay on the V1 `characters` contract.
+  inft: "0x2C6D703CE17cBBd904b6949F4814C5E2a2fF1a75" as Hex,
+  dataVerifier: "0x501e6Ff1759f0d762A0F9eD353280b26212df3CC" as Hex,
 } as const;
+
+/** Character tokenIds migrated to the real ERC-7857 HeckleINFT. */
+export const INFT_MIGRATED_IDS: readonly number[] = [0, 3, 4];
+
+export function isInftMigrated(tokenId: number | string): boolean {
+  return INFT_MIGRATED_IDS.includes(Number(tokenId));
+}
 
 export const HECKLE_ADDRESSES = {
   characters: (process.env.NEXT_PUBLIC_HECKLE_CHARACTERS as Hex) || DEPLOYED_ADDRESSES.characters,
@@ -29,6 +40,9 @@ export const HECKLE_ADDRESSES = {
     DEPLOYED_ADDRESSES.attestationRegistry,
   verifiedTakes:
     (process.env.NEXT_PUBLIC_HECKLE_VERIFIED_TAKES as Hex) || DEPLOYED_ADDRESSES.verifiedTakes,
+  inft: (process.env.NEXT_PUBLIC_HECKLE_INFT as Hex) || DEPLOYED_ADDRESSES.inft,
+  dataVerifier:
+    (process.env.NEXT_PUBLIC_HECKLE_DATA_VERIFIER as Hex) || DEPLOYED_ADDRESSES.dataVerifier,
 } as const;
 
 /**

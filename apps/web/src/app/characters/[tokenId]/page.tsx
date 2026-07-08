@@ -1,9 +1,10 @@
 "use client";
 
 import { use, useMemo } from "react";
+import Link from "next/link";
 import { usePublicClient } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { archetype, gradePrediction, REP_SCORING } from "@heckle/shared";
+import { archetype, gradePrediction, REP_SCORING, isInftMigrated } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
@@ -18,6 +19,7 @@ import {
 import { HashLink } from "@/components/HashLink";
 import {
   charactersContract,
+  inftContract,
   takesContract,
   contractConfigured,
 } from "@/lib/contracts";
@@ -37,6 +39,10 @@ interface CharacterView {
   brief: string;
   imageRoot: string | null;
   personalityRoot: `0x${string}`;
+  /** True once this character is a real ERC-7857 INFT (migrated). */
+  isInft: boolean;
+  /** The encrypted personality core's on-chain commitment (INFT only). */
+  sealedCoreHash: `0x${string}` | null;
   owner: `0x${string}`;
   reputationIndex: number;
   takesGenerated: number;
@@ -72,23 +78,51 @@ export default function CharacterPage({
     queryFn: async (): Promise<CharacterView> => {
       if (!publicClient) throw new Error("No public client.");
       const id = BigInt(tokenId);
+      const useInft = isInftMigrated(tokenId);
+      const ZERO_HASH = `0x${"0".repeat(64)}` as `0x${string}`;
 
-      const [meta, owner] = await Promise.all([
-        publicClient.readContract({
-          address: charactersContract.address,
-          abi: charactersContract.abi,
-          functionName: "characterOf",
-          args: [id],
-        }),
-        publicClient.readContract({
-          address: charactersContract.address,
-          abi: charactersContract.abi,
-          functionName: "ownerOf",
-          args: [id],
-        }),
-      ]);
+      let name: string;
+      let handle: string;
+      let archetypeIdx: number;
+      let brief: string;
+      let paletteId: number;
+      let imageRoot: string | null;
+      let personalityRoot: `0x${string}`;
+      let sealedCoreHash: `0x${string}` | null;
+      let owner: `0x${string}`;
 
-      const blob = await fetchBlob<PersonalityBlob>(meta.personalityRoot);
+      if (useInft) {
+        // Real ERC-7857 identity: public card on-chain, personality core sealed.
+        const [meta, o, datas] = await Promise.all([
+          publicClient.readContract({ address: inftContract.address, abi: inftContract.abi, functionName: "characterOf", args: [id] }),
+          publicClient.readContract({ address: inftContract.address, abi: inftContract.abi, functionName: "ownerOf", args: [id] }),
+          publicClient.readContract({ address: inftContract.address, abi: inftContract.abi, functionName: "intelligentDatasOf", args: [id] }),
+        ]);
+        name = meta.name;
+        handle = meta.handle;
+        archetypeIdx = meta.archetype;
+        brief = "";
+        paletteId = 1;
+        imageRoot = null;
+        sealedCoreHash = datas.length > 0 ? datas[0].dataHash : null;
+        personalityRoot = sealedCoreHash ?? ZERO_HASH;
+        owner = o;
+      } else {
+        const [meta, o] = await Promise.all([
+          publicClient.readContract({ address: charactersContract.address, abi: charactersContract.abi, functionName: "characterOf", args: [id] }),
+          publicClient.readContract({ address: charactersContract.address, abi: charactersContract.abi, functionName: "ownerOf", args: [id] }),
+        ]);
+        const blob = await fetchBlob<PersonalityBlob>(meta.personalityRoot);
+        name = blob?.name ?? `Heckler #${tokenId}`;
+        handle = blob?.handle ?? meta.handle;
+        archetypeIdx = meta.archetype;
+        brief = blob?.personalityBrief ?? "";
+        paletteId = typeof blob?.palette === "number" ? blob.palette : 1;
+        imageRoot = typeof blob?.imageRoot === "string" ? blob.imageRoot : null;
+        personalityRoot = meta.personalityRoot;
+        sealedCoreHash = null;
+        owner = o;
+      }
 
       const repConfigured = contractConfigured(takesContract.address);
       let repIndex = 0;
@@ -191,13 +225,15 @@ export default function CharacterPage({
       }
 
       return {
-        name: blob?.name ?? `Heckler #${tokenId}`,
-        handle: blob?.handle ?? meta.handle,
-        archetype: meta.archetype,
-        paletteId: typeof blob?.palette === "number" ? blob.palette : 1,
-        brief: blob?.personalityBrief ?? "",
-        imageRoot: typeof blob?.imageRoot === "string" ? blob.imageRoot : null,
-        personalityRoot: meta.personalityRoot,
+        name,
+        handle,
+        archetype: archetypeIdx,
+        paletteId,
+        brief,
+        imageRoot,
+        personalityRoot,
+        isInft: useInft,
+        sealedCoreHash,
         owner,
         reputationIndex: repIndex,
         takesGenerated,
@@ -285,6 +321,15 @@ export default function CharacterPage({
           <div className="flex flex-wrap items-center gap-2">
             <Pill tone="filled">{arch.label}</Pill>
             <span className="font-mono text-xs opacity-60">Token #{tokenId}</span>
+            {data.isInft ? (
+              <Link
+                href="/transfer-guarantees"
+                title="Real ERC-7857 INFT — encrypted personality core, oracle-gated transfer"
+                className="inline-flex hover:-translate-y-px transition-transform"
+              >
+                <Pill tone="filled">ERC-7857 INFT ↗</Pill>
+              </Link>
+            ) : null}
             <Erc8004Badge tokenId={Number(tokenId)} />
           </div>
           <h1 className="font-display font-black text-5xl leading-none">
@@ -308,7 +353,32 @@ export default function CharacterPage({
 
       <Divider />
 
-      {data.brief ? (
+      {data.isInft ? (
+        <section className="flex flex-col gap-3 max-w-prose">
+          <h2 className="font-display text-2xl font-black">Personality core</h2>
+          <div className="flex flex-col gap-2 border border-rule bg-whisper p-4">
+            <div className="flex items-center gap-2">
+              <span aria-hidden>🔒</span>
+              <span className="font-mono text-xs uppercase tracking-wide">
+                Encrypted · ERC-7857
+              </span>
+            </div>
+            <p className="font-body text-sm opacity-70">
+              The system seed, strategy, and owner-gated memory are sealed on 0G Storage —
+              only the current owner can decrypt them. This public profile needs none of it.
+            </p>
+            {data.sealedCoreHash ? (
+              <HashLink type="storage_root" value={data.sealedCoreHash} label="Sealed core on 0G ·" />
+            ) : null}
+            <Link
+              href="/transfer-guarantees"
+              className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+            >
+              What a transfer guarantees →
+            </Link>
+          </div>
+        </section>
+      ) : data.brief ? (
         <section className="flex flex-col gap-3 max-w-prose">
           <h2 className="font-display text-2xl font-black">Personality</h2>
           <p className="font-body text-lg opacity-90">{data.brief}</p>
@@ -403,7 +473,27 @@ export default function CharacterPage({
         )}
       </section>
 
-      <TransferControls tokenId={tokenId} owner={data.owner} />
+      {data.isInft ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-2xl font-black">Transfer</h2>
+          <Card className="p-6 flex flex-col gap-3">
+            <p className="font-body opacity-80 max-w-prose">
+              This is a real ERC-7857 INFT. Transfer isn&rsquo;t a plain send — the oracle
+              re-encrypts the private core and seals it to the buyer, and the contract
+              rotates the on-chain data hash. Ownership and the public record move; the
+              seller&rsquo;s old key can&rsquo;t open the new payload.
+            </p>
+            <Link
+              href="/transfer-guarantees"
+              className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+            >
+              Exactly what a transfer guarantees →
+            </Link>
+          </Card>
+        </section>
+      ) : (
+        <TransferControls tokenId={tokenId} owner={data.owner} />
+      )}
     </div>
   );
 }

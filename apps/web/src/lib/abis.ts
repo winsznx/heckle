@@ -226,6 +226,58 @@ export const heckleVerifiedTakesAbi = [
   },
 ] as const;
 
+export const heckleInftAbi = [
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "characterOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "archetype", type: "uint8" },
+          { name: "handle", type: "string" },
+          { name: "name", type: "string" },
+          { name: "creator", type: "address" },
+          { name: "createdAt", type: "uint64" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "intelligentDatasOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple[]",
+        components: [
+          { name: "dataDescription", type: "string" },
+          { name: "dataHash", type: "bytes32" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "migrationSealed",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
 export const heckleBracketsAbi = [
   {
     type: "event",

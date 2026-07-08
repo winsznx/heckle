@@ -16,6 +16,7 @@ export const HECKLE_EVENTS_ABI = [
 
 export const HECKLE_CHARACTERS_ABI = [
   "event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 personalityRoot)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
   "function characterOf(uint256 tokenId) view returns (tuple(uint8 archetype, string handle, bytes32 personalityRoot, address creator, uint64 createdAt))",
   "function tokenURI(uint256 tokenId) view returns (string)",
   "function totalMinted() view returns (uint256)",

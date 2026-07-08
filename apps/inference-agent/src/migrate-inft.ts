@@ -72,12 +72,27 @@ async function main(): Promise<void> {
   const v1 = new ethers.Contract(cfg.HECKLE_CHARACTERS, HECKLE_CHARACTERS_ABI, provider);
   const inft = new ethers.Contract(inftAddr, HECKLE_INFT_ABI, signer);
 
-  const total = Number(await v1.totalMinted());
-  log(`V1 characters: ${total}`);
+  // Migrate ONLY the flagship characters — The Pundit (0), The Hater (3), The
+  // Optimist (4). #1/#2 are user-created; they stay on V1. Override with
+  // HECKLE_MIGRATE_IDS.
+  const MIGRATE_IDS = (process.env.HECKLE_MIGRATE_IDS?.split(",").map((s) => Number(s.trim())))
+    ?? [0, 3, 4];
+  log(`migrating tokenIds: ${MIGRATE_IDS.join(", ")}`);
   const keystore: Record<string, string> = {};
 
-  for (let tokenId = 0; tokenId < total; tokenId++) {
+  for (const tokenId of MIGRATE_IDS) {
     const owner: string = await v1.ownerOf(tokenId);
+
+    // Resumable: skip ids already minted on the INFT (migrateMint reverts on an
+    // existing id, and the 0G RPC is flaky — a partial run must be safe to retry).
+    try {
+      const existing: string = await inft.ownerOf(tokenId);
+      log(`#${tokenId} already on INFT (owner ${existing}) — skipping`);
+      continue;
+    } catch {
+      /* not minted yet — proceed */
+    }
+
     const c = await v1.characterOf(tokenId);
     const personality = (await downloadJson(String(c.personalityRoot))) as Record<string, unknown>;
     const { card, core } = splitPersonality(personality);
@@ -118,15 +133,23 @@ async function main(): Promise<void> {
     if (decrypted !== JSON.stringify(core)) throw new Error(`#${tokenId} core decrypt round-trip failed`);
     // Sanity: the owner's sealed key unseals (agent operates the owner key here).
     void sealKeyTo(publicKeyOf(cfg.AGENT_PRIVATE_KEY), dataKey);
-    log(`#${tokenId} ✓ migrated + verified (dataHash on-chain, decrypt round-trip)`);
+    const newOwner: string = await inft.ownerOf(tokenId);
+    const preserved = newOwner.toLowerCase() === owner.toLowerCase();
+    log(
+      `#${tokenId} ✓ migrated: owner ${owner} -> ${newOwner} ${preserved ? "(preserved ✓)" : "(MISMATCH ✗)"}`,
+    );
   }
 
   writeFileSync(KEYSTORE, JSON.stringify(keystore, null, 2));
   log(`data keys written to ${KEYSTORE} (gitignored)`);
 
-  const sealTx = await inft.sealMigration();
-  await sealTx.wait();
-  log("sealMigration() done — public minting open, V1 ids can't be squatted.");
+  if (process.argv.includes("--seal")) {
+    const sealTx = await inft.sealMigration();
+    await sealTx.wait();
+    log("sealMigration() done — public minting open, V1 ids can't be squatted.");
+  } else {
+    log("PAUSED before sealMigration() — migration NOT sealed. Re-run with --seal after approval.");
+  }
   log("DONE.");
 }
 
