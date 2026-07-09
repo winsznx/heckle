@@ -16,10 +16,11 @@ function extractYouTubeId(input: string): string | null {
 /**
  * Rolling video wall — newest round on top. To publish a new walkthrough, set
  * the round's env var and redeploy; it slots above the earlier ones.
- * Precedence (top → bottom): R16 → R32 → group stage.
+ * Precedence (top → bottom): Quarter-finals → R16 → R32 → group stage.
  */
 const SLOTS = [
-  { label: "Latest", caption: "R16 walkthrough", id: extractYouTubeId(process.env.NEXT_PUBLIC_DEMO_VIDEO_ID_R16 ?? "") },
+  { label: "Latest", caption: "Quarter-final walkthrough", id: extractYouTubeId(process.env.NEXT_PUBLIC_DEMO_VIDEO_ID_QF ?? "") },
+  { label: "Round of 16", caption: "R16 walkthrough", id: extractYouTubeId(process.env.NEXT_PUBLIC_DEMO_VIDEO_ID_R16 ?? "") },
   { label: "Round of 32", caption: "The bracket build", id: extractYouTubeId(process.env.NEXT_PUBLIC_DEMO_VIDEO_ID_R32 ?? "") },
   { label: "Group stage", caption: "How it started", id: extractYouTubeId(process.env.NEXT_PUBLIC_DEMO_VIDEO_ID ?? "") },
 ];
@@ -74,7 +75,7 @@ export default function DemoVideoPage() {
         <div className="aspect-video w-full border border-rule bg-whisper flex flex-col items-center justify-center gap-2 p-6 text-center">
           <p className="font-display text-xl">Dropping here the moment it&rsquo;s recorded.</p>
           <p className="font-mono text-xs uppercase tracking-wide opacity-60">
-            Set NEXT_PUBLIC_DEMO_VIDEO_ID_R16 to go live.
+            Set NEXT_PUBLIC_DEMO_VIDEO_ID_QF to go live.
           </p>
         </div>
       ) : (
