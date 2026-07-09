@@ -196,6 +196,14 @@ contract HeckleINFT is ERC721, ERC721URIStorage, Ownable, IERC7857 {
         emit Updated(tokenId, oldDatas, newDatas);
     }
 
+    /// @notice Refresh a token's public display metadata (the ERC-721 tokenURI /
+    ///         explorer card). The private core is untouched — this is the public
+    ///         card only, so display metadata is never stuck.
+    function setCardURI(uint256 tokenId, string calldata uri) external {
+        if (ownerOf(tokenId) != msg.sender) revert NotAuthorized();
+        _setTokenURI(tokenId, uri);
+    }
+
     /// @inheritdoc IERC7857
     function delegateAccess(address assistant) external {
         _delegate[msg.sender] = assistant;

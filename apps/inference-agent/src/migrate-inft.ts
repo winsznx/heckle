@@ -33,6 +33,14 @@ import {
  */
 const PUBLIC_FIELDS = ["name", "archetype", "handle", "bio", "description", "portrait", "portraitRoot", "imageRoot", "avatar"];
 const KEYSTORE = new URL("../.inft-keys.json", import.meta.url).pathname;
+const WEB_BASE = "https://tryheckle.xyz";
+
+// Flagship display metadata — portrait roots already on 0G Storage.
+const FLAGSHIP: Record<number, { portraitRoot: string; archetypeLabel: string }> = {
+  0: { portraitRoot: "0x8698ab864319b8b5797c7007d2bee3c817266eaeb1c73a91c691a0467f709825", archetypeLabel: "Analyst" },
+  3: { portraitRoot: "0xb07cad2324c9b4f4aebb972b133e11ae8b3b152fc5ed138c4a088317d716898c", archetypeLabel: "Hater" },
+  4: { portraitRoot: "0x0ac19b075b005f1ca9e31843a6c1d706a3f17cdafe2bbe7a75045e4e5adfbe9c", archetypeLabel: "Optimist" },
+};
 
 function log(...a: unknown[]): void {
   console.log("[migrate-inft]", ...a);
@@ -102,12 +110,25 @@ async function main(): Promise<void> {
     const dataKey = randomDataKey();
     const cipher: CipherBlob = encryptCore(JSON.stringify(core), dataKey);
     const { root: cipherRoot } = await uploadJson(signer, cipher);
-    const { root: cardRoot, uri: cardUri } = await uploadJson(signer, {
-      ...card,
-      handle: c.handle,
-      archetype: Number(c.archetype),
-      erc7857: true,
-    });
+    // Explorer-compatible ERC-721 metadata (name/description/image/attributes),
+    // image = the portrait already on 0G Storage (NOT the encrypted core).
+    const flag = FLAGSHIP[tokenId];
+    const cardMeta: Record<string, unknown> = {
+      name,
+      description:
+        "An ERC-7857 Heckle character. Public record and reputation stay visible; the private personality core is encrypted and transfers with the token.",
+      external_url: `${WEB_BASE}/characters/${tokenId}`,
+      attributes: [
+        { trait_type: "Archetype", value: flag?.archetypeLabel ?? String(c.archetype) },
+        { trait_type: "Handle", value: c.handle },
+        { trait_type: "Standard", value: "ERC-7857" },
+        { trait_type: "Private Core", value: "Sealed" },
+      ],
+      heckle: { erc7857: true, public_record: true, encrypted_core: true },
+    };
+    if (flag) cardMeta.image = storageUri(flag.portraitRoot);
+    void card;
+    const { root: cardRoot, uri: cardUri } = await uploadJson(signer, cardMeta);
 
     log(`#${tokenId} ${name}: owner=${owner} card=${cardRoot.slice(0, 10)}… core=${cipherRoot.slice(0, 10)}…`);
 

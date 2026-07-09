@@ -21,6 +21,7 @@ import {
   charactersContract,
   inftContract,
   takesContract,
+  verifiedTakesContract,
   contractConfigured,
 } from "@/lib/contracts";
 import { archetypeIdFromIndex, reputationIndex } from "@/lib/characters";
@@ -57,6 +58,7 @@ interface CharacterView {
     text: string | null;
     txHash: string;
     verified: boolean;
+    contractVerified: boolean;
     matchupId: string;
     prediction: string | null;
   }[];
@@ -166,6 +168,25 @@ export default function CharacterPage({
           toBlock: "latest",
         });
 
+        // Contract-verified annotation (best-effort): takeRoots recorded on
+        // HeckleVerifiedTakes for this character. Never gates the take list.
+        const verifiedRoots = new Set<string>();
+        try {
+          const vLogs = await publicClient.getLogs({
+            address: verifiedTakesContract.address,
+            event: verifiedTakesContract.abi[0],
+            args: { characterId: id },
+            fromBlock: 36996000n,
+            toBlock: "latest",
+          });
+          for (const vl of vLogs) {
+            const r = vl.args.takeRoot;
+            if (typeof r === "string") verifiedRoots.add(r.toLowerCase());
+          }
+        } catch {
+          /* annotation only */
+        }
+
         // Fetch every take blob concurrently — sequential awaits made this the
         // slowest page (one network round-trip per take).
         const resolved = await Promise.all(
@@ -196,6 +217,7 @@ export default function CharacterPage({
                 text: takeBlob?.text ?? null,
                 txHash: log.transactionHash ?? "",
                 verified: takeBlob?.inferenceAttestation?.valid === true,
+                contractVerified: verifiedRoots.has(root.toLowerCase()),
                 matchupId:
                   typeof takeBlob?.matchupId === "string" ? takeBlob.matchupId : "",
                 prediction:
@@ -459,6 +481,7 @@ export default function CharacterPage({
                 takeRoot={take.takeRoot}
                 txHash={take.txHash}
                 verified={take.verified}
+                contractVerified={take.contractVerified}
                 outcome={
                   take.matchupId
                     ? gradePrediction(take.matchupId, take.prediction)

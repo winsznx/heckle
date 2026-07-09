@@ -20,13 +20,18 @@ contract DeployINFT is Script {
     function run() external {
         address oracle = vm.envOr("HECKLE_ORACLE", DEFAULT_ORACLE);
         require(oracle != address(0), "DeployINFT: zero oracle");
+        // Reuse an existing verifier if provided (e.g. a metadata-only INFT
+        // redeploy); otherwise deploy a fresh one.
+        address existingVerifier = vm.envOr("HECKLE_DATA_VERIFIER", address(0));
 
         vm.startBroadcast();
-        HeckleDataVerifier verifier = new HeckleDataVerifier(oracle);
-        HeckleINFT inft = new HeckleINFT(address(verifier));
+        address verifierAddr = existingVerifier != address(0)
+            ? existingVerifier
+            : address(new HeckleDataVerifier(oracle));
+        HeckleINFT inft = new HeckleINFT(verifierAddr);
         vm.stopBroadcast();
 
-        console.log("HeckleDataVerifier:", address(verifier));
+        console.log("HeckleDataVerifier:", verifierAddr);
         console.log("HeckleINFT:", address(inft));
         console.log("oracle signer:", oracle);
     }

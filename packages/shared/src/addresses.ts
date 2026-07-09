@@ -17,7 +17,7 @@ export const DEPLOYED_ADDRESSES = {
   verifiedTakes: "0x39c138842E89B9f5935C0B050CE2dA86F21c88dF" as Hex,
   // Real ERC-7857 layer. The flagship characters (tokenIds 0/3/4) live here;
   // user characters 1/2 stay on the V1 `characters` contract.
-  inft: "0x2C6D703CE17cBBd904b6949F4814C5E2a2fF1a75" as Hex,
+  inft: "0xD37eB2Ea885ebeB683b3d0511A3807c6F99746cC" as Hex,
   dataVerifier: "0x501e6Ff1759f0d762A0F9eD353280b26212df3CC" as Hex,
 } as const;
 

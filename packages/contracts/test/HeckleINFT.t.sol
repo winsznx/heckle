@@ -165,6 +165,20 @@ contract HeckleINFTTest is Test {
         inft.iTransferFrom(alice, bob, 0, proofs);
     }
 
+    function test_SetCardURI_RefreshesDisplayMetadata() public {
+        _migrate(0, alice);
+        vm.prank(alice);
+        inft.setCardURI(0, "https://indexer-storage-turbo.0g.ai/file?root=0xnewcard");
+        assertEq(inft.tokenURI(0), "https://indexer-storage-turbo.0g.ai/file?root=0xnewcard");
+    }
+
+    function test_SetCardURI_OnlyTokenOwner() public {
+        _migrate(0, alice);
+        vm.prank(mallory);
+        vm.expectRevert(HeckleINFT.NotAuthorized.selector);
+        inft.setCardURI(0, "x");
+    }
+
     function test_SupportsRealErc7857InterfaceId() public view {
         assertTrue(inft.supportsInterface(inft.INTERFACE_ID_ERC7857()));
         // Not the old placeholder id.
