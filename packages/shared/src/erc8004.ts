@@ -13,6 +13,9 @@ export const ERC8004_AGENTS: Record<number, number> = {
   0: 1400427, // The Pundit
   3: 1400450, // The Hater
   4: 1400456, // The Optimist
+  5: 1405225, // The Homer
+  6: 1405240, // The Firebrand
+  7: 1405259, // The Contrarian
 };
 
 export function erc8004AgentId(tokenId: number): number | undefined {

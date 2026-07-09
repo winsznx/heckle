@@ -38,7 +38,7 @@ export function Footer() {
         <div className="border border-rule bg-whisper overflow-hidden">
           <Image
             src="/hecklers.avif"
-            alt="The Pundit, The Hater, and The Optimist"
+            alt="The six Heckle characters — Pundit, Hater, Optimist, Homer, Firebrand, Contrarian"
             width={1600}
             height={700}
             unoptimized

@@ -26,6 +26,9 @@ const CHARACTER_NAMES: Record<string, string> = {
   "0": "The Pundit",
   "3": "The Hater",
   "4": "The Optimist",
+  "5": "The Homer",
+  "6": "The Firebrand",
+  "7": "The Contrarian",
 };
 function characterName(id: string): string {
   return CHARACTER_NAMES[id] ?? `Heckler #${id}`;
@@ -39,7 +42,8 @@ function eventName(id: string): string {
 function decodeMatchup(b: string): string {
   try {
     const s = hexToString(trim(b as `0x${string}`, { dir: "right" }));
-    return s || "—";
+    // Only show clean printable ids (e.g. "R16_8", "537382"); reject garbled decodes.
+    return /^[\x20-\x7E]{1,31}$/.test(s) ? s : "—";
   } catch {
     return "—";
   }

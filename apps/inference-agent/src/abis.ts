@@ -51,6 +51,8 @@ export const ERC8004_IDENTITY_ABI = [
 export const HECKLE_INFT_ABI = [
   "event CharacterMinted(uint256 indexed tokenId, address indexed owner, uint8 archetype, bytes32 dataHash)",
   "function migrateMint(uint256 tokenId, address to, uint8 archetype, string handle, string name, string tokenURI_, (string dataDescription, bytes32 dataHash) initialData)",
+  "function mint(uint8 archetype, string handle, string name, string tokenURI_, (string dataDescription, bytes32 dataHash) initialData) returns (uint256 tokenId)",
+  "function setCardURI(uint256 tokenId, string uri)",
   "function sealMigration()",
   "function migrationSealed() view returns (bool)",
   "function ownerOf(uint256 tokenId) view returns (address)",

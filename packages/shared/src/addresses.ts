@@ -21,8 +21,8 @@ export const DEPLOYED_ADDRESSES = {
   dataVerifier: "0x501e6Ff1759f0d762A0F9eD353280b26212df3CC" as Hex,
 } as const;
 
-/** Character tokenIds migrated to the real ERC-7857 HeckleINFT. */
-export const INFT_MIGRATED_IDS: readonly number[] = [0, 3, 4];
+/** Character tokenIds that live on the real ERC-7857 HeckleINFT. */
+export const INFT_MIGRATED_IDS: readonly number[] = [0, 3, 4, 5, 6, 7];
 
 export function isInftMigrated(tokenId: number | string): boolean {
   return INFT_MIGRATED_IDS.includes(Number(tokenId));

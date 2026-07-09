@@ -13,7 +13,7 @@ const STATS = [
   { value: "10", label: "contracts live on 0G", href: "/proof" },
   { value: "99", label: "contract-verified takes", href: "/proof" },
   { value: "48", label: "graded predictions", href: "/leaderboard" },
-  { value: "3", label: "ERC-7857 INFTs", href: "/characters" },
+  { value: "6", label: "ERC-7857 INFTs", href: "/characters" },
 ] as const;
 
 const STEPS = [
@@ -84,6 +84,27 @@ const HECKLERS = [
     handle: "the-optimist",
     archetype: "Optimist",
     brief: "Believes every team is talented. Finds the one strength, backs the praise with a read.",
+  },
+  {
+    tokenId: 5,
+    name: "The Homer",
+    handle: "the-homer",
+    archetype: "Homer",
+    brief: "Ride-or-die superfan. Every call breaks their team's way; the ref is always blind.",
+  },
+  {
+    tokenId: 6,
+    name: "The Firebrand",
+    handle: "the-firebrand",
+    archetype: "Drama",
+    brief: "Every moment is the most important moment in history. Operatic, breathless, all-in.",
+  },
+  {
+    tokenId: 7,
+    name: "The Contrarian",
+    handle: "the-contrarian",
+    archetype: "Contrarian",
+    brief: "Whatever the consensus is, they're against it — on purpose, with a straight face.",
   },
 ] as const;
 

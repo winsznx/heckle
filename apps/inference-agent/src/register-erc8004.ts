@@ -4,6 +4,7 @@ import {
   ERC8004_ADDRESSES,
   buildErc8004RegistrationFile,
   erc8004RegistryRef,
+  erc8004AgentId,
 } from "@heckle/shared";
 import { requireEnv } from "./env.js";
 import { ERC8004_IDENTITY_ABI } from "./abis.js";
@@ -24,6 +25,9 @@ const CHARACTERS: { tokenId: number; name: string; description: string; slug: st
   { tokenId: 0, name: "The Pundit", slug: "the-pundit", description: "Cold, technical analyst. Never hedges; weights demo polish and product-market fit." },
   { tokenId: 3, name: "The Hater", slug: "the-hater", description: "Bitter ex-player turned analyst. Sees every weakness; predicts what teams get wrong." },
   { tokenId: 4, name: "The Optimist", slug: "the-optimist", description: "Believes every team is talented. Backs praise with a specific technical observation." },
+  { tokenId: 5, name: "The Homer", slug: "the-homer", description: "Ride-or-die superfan. Every call breaks their team's way; loyalty over logic." },
+  { tokenId: 6, name: "The Firebrand", slug: "the-firebrand", description: "Pure drama. Every moment is the most important moment in history." },
+  { tokenId: 7, name: "The Contrarian", slug: "the-contrarian", description: "Whatever the consensus is, they're against it — on purpose, straight-faced." },
 ];
 
 function log(...a: unknown[]): void {
@@ -34,7 +38,7 @@ function fileFor(inft: string, c: (typeof CHARACTERS)[number], agentId?: number)
   return buildErc8004RegistrationFile({
     name: c.name,
     description: c.description,
-    image: `${WEB_BASE}/characters/${c.tokenId}/portrait.avif`,
+    image: `${WEB_BASE}/characters/${c.tokenId}.avif`,
     webEndpoint: `${WEB_BASE}/characters/${c.tokenId}`,
     inftContract: inft,
     tokenId: c.tokenId,
@@ -97,6 +101,10 @@ async function main(): Promise<void> {
   const registry = new ethers.Contract(ERC8004_ADDRESSES.identity, ERC8004_IDENTITY_ABI, signer);
   const agents: Record<number, number> = {};
   for (const c of CHARACTERS) {
+    if (erc8004AgentId(c.tokenId) !== undefined) {
+      log(`#${c.tokenId} ${c.name} already registered (agent ${erc8004AgentId(c.tokenId)}) — skipping`);
+      continue;
+    }
     const agentURI = `${WEB_BASE}/api/agents/${c.tokenId}`;
     const tx = await registry.register(agentURI);
     const rc = await tx.wait();
