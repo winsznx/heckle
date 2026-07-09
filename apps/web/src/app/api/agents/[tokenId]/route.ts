@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { buildErc8004RegistrationFile, erc8004AgentId } from "@heckle/shared";
+import {
+  buildErc8004RegistrationFile,
+  erc8004AgentId,
+  HECKLE_ADDRESSES,
+} from "@heckle/shared";
 
 /**
- * Serves a character's ERC-8004 registration file. Points at the FINAL ERC-7857
- * identity (HeckleINFT contract + tokenId). Returns 503 until the migration has
- * set NEXT_PUBLIC_HECKLE_INFT, so a registration can never bind to the V1 token.
+ * Serves a character's ERC-8004 registration file, pointing at the FINAL
+ * ERC-7857 identity (sealed HeckleINFT contract + tokenId).
  */
 const WEB_BASE = "https://tryheckle.xyz";
-const INFT = process.env.NEXT_PUBLIC_HECKLE_INFT;
+const INFT = HECKLE_ADDRESSES.inft;
 
 const CHARACTERS: Record<string, { name: string; description: string }> = {
   "0": { name: "The Pundit", description: "Cold, technical analyst. Never hedges; weights demo polish and product-market fit." },

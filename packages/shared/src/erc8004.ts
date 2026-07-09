@@ -8,9 +8,11 @@ import { ERC8004_ADDRESSES } from "./addresses";
  * the badge tracks the FINAL migrated identity, not the legacy V1 token.
  */
 
-/** tokenId (character) -> agentId (ERC-8004). Filled after on-chain registration. */
+/** tokenId (character) -> agentId (ERC-8004), registered on 0G's IdentityRegistry. */
 export const ERC8004_AGENTS: Record<number, number> = {
-  // 0: <agentId>,  1: <agentId>,  2: <agentId>   ← set by register-erc8004 after migrate
+  0: 1400427, // The Pundit
+  3: 1400450, // The Hater
+  4: 1400456, // The Optimist
 };
 
 export function erc8004AgentId(tokenId: number): number | undefined {
