@@ -229,6 +229,11 @@ function CreateFlow() {
     <div className="flex flex-col gap-8 max-w-prose">
       <div className="flex flex-col gap-4">
         <h1 className="font-display font-black text-4xl">Create a heckler</h1>
+        <p className="font-body text-sm opacity-70">
+          Mints as a character token on 0G Chain, portrait uploaded to 0G Storage.
+          The flagship hecklers (The Pundit, The Hater, The Optimist) run as full
+          ERC-7857 INFTs with an encrypted personality core.
+        </p>
         <div className="flex flex-wrap gap-2">
           {STEP_LABELS.map((label, i) => (
             <Pill key={label} tone={i === step ? "filled" : "default"}>

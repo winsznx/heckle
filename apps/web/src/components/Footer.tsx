@@ -16,8 +16,8 @@ const COLUMNS = [
     links: [
       { href: "/proof", label: "What makes a take real" },
       { href: "/transfer-guarantees", label: "Transfer guarantees" },
+      { href: "/explorer", label: "Explorer" },
       { href: "/judge", label: "90-second walkthrough" },
-      { href: "/leaderboard", label: "Leaderboard" },
     ],
   },
   {

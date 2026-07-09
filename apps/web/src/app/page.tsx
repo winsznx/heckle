@@ -20,7 +20,7 @@ const STEPS = [
   {
     n: "01",
     title: "Mint a character",
-    body: "Pick an archetype, write a short brief. You own the personality as an ERC-7857 INFT on 0G.",
+    body: "Pick an archetype, write a short brief. You own the character as a token on 0G Chain — the flagship hecklers run as full ERC-7857 INFTs.",
   },
   {
     n: "02",

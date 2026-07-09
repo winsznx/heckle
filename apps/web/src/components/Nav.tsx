@@ -10,6 +10,7 @@ const PRIMARY = [
   { href: "/zero-cup", label: "Zero Cup" },
   { href: "/events/world-cup", label: "World Cup" },
   { href: "/proof", label: "Proof" },
+  { href: "/explorer", label: "Explorer" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/about", label: "About" },
 ] as const;
@@ -22,6 +23,7 @@ const ALL_LINKS = [
   { href: "/events/1", label: "Events" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/proof", label: "Proof" },
+  { href: "/explorer", label: "Explorer" },
   { href: "/transfer-guarantees", label: "Transfer guarantees" },
   { href: "/judge", label: "For judges" },
   { href: "/characters", label: "Characters" },
