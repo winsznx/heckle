@@ -23,6 +23,10 @@ interface MatchupPanelProps {
   chosen: string | undefined;
   onPick: (nodeId: string, winner: string) => void;
   onNavigate: (dir: -1 | 1) => void;
+  /** Whether the selected node's round has siblings to flip between. */
+  canNavigate: boolean;
+  /** Settled round — `chosen` is the locked tournament result, not a user pick. */
+  locked?: boolean;
   takes: MatchTake[];
 }
 
@@ -33,6 +37,8 @@ export function MatchupPanel({
   chosen,
   onPick,
   onNavigate,
+  canNavigate,
+  locked = false,
   takes,
 }: MatchupPanelProps) {
   if (!node) {
@@ -42,8 +48,8 @@ export function MatchupPanel({
           Matchup
         </span>
         <p className="font-body opacity-70">
-          Tap any matchup on the bracket to see the three hecklers&rsquo; calls and
-          pick your winner.
+          Tap any matchup on the bracket to see the hecklers&rsquo; calls and pick
+          your winner.
         </p>
       </Card>
     );
@@ -67,20 +73,36 @@ export function MatchupPanel({
         </div>
       );
     }
-    const isPick = chosen === name;
+    const isWinner = chosen === name;
+    const status = locked
+      ? isWinner
+        ? "Advanced ✓"
+        : "Eliminated"
+      : isWinner
+        ? "Your pick ✓"
+        : "Pick to advance";
+    const highlight = isWinner ? "bg-ink text-paper" : "bg-paper";
     return (
       <button
         type="button"
         onClick={() => onPick(node.id, name)}
-        className={`flex-1 border border-rule px-3 py-3 flex flex-col gap-1 text-left transition-colors ${
-          isPick ? "bg-ink text-paper" : "bg-paper hover:bg-whisper"
+        disabled={locked}
+        aria-disabled={locked}
+        className={`flex-1 border border-rule px-3 py-3 flex flex-col gap-1 text-left transition-colors ${highlight} ${
+          locked
+            ? isWinner
+              ? "cursor-default"
+              : "cursor-default opacity-50"
+            : isWinner
+              ? ""
+              : "hover:bg-whisper"
         }`}
       >
         <span className="font-display text-lg font-black leading-none">
           {flagEmoji(countryOf(name))} {name}
         </span>
         <span className="font-mono text-xs opacity-70">
-          {isPick ? "Your pick ✓" : "Pick to advance"}
+          {status}
           {takes.length > 0 ? ` · ${votes} heckler${votes === 1 ? "" : "s"}` : ""}
         </span>
       </button>
@@ -95,11 +117,16 @@ export function MatchupPanel({
           <span className="font-mono text-xs uppercase tracking-wide opacity-50">
             {node.bracket}
           </span>
+          {locked ? (
+            <span className="font-mono text-xs uppercase tracking-wide opacity-50">
+              · settled
+            </span>
+          ) : null}
           {isR32 ? (
             <span className="font-mono text-xs opacity-50">{node.label}</span>
           ) : null}
         </div>
-        {isR32 ? (
+        {canNavigate ? (
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"

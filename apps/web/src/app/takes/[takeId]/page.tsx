@@ -50,6 +50,8 @@ interface TakeView {
   prediction: string | null;
   confidence: number | null;
   matchupId: string;
+  model: string | null;
+  tokens: number | null;
   takeRoot: `0x${string}`;
   txHash: string;
   timestamp: bigint;
@@ -129,6 +131,10 @@ export default function TakePage({
         prediction,
         confidence: parseConfidence(blob?.text),
         matchupId,
+        model:
+          blob?.inference?.model ??
+          (typeof blob?.model === "string" ? blob.model : null),
+        tokens: blob?.inference?.usage?.total ?? null,
         takeRoot: root,
         txHash: String(log.transactionHash ?? ""),
         timestamp: ts,
@@ -265,6 +271,12 @@ export default function TakePage({
             ) : (
               <span>replay pending</span>
             )}
+            {data.model ? (
+              <span>
+                reasoned by {data.model}
+                {data.tokens ? ` · ${data.tokens} tok` : ""}
+              </span>
+            ) : null}
           </div>
         </div>
         <ContractVerifiedBadge root={data.takeRoot} />

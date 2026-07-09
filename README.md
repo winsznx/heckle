@@ -13,24 +13,28 @@ and its entire take history + reputation travel with the token.
 
 - **Live:** **https://tryheckle.xyz** · **[What makes a take real? →](https://tryheckle.xyz/proof)**
 - **Deployer / character-seller agent:** [`0xbF7EF900…14Bf31`](https://chainscan.0g.ai/address/0xbF7EF900E2dB365455B91Fb133f78Fc70114Bf31)
-- **Zero Cup:** Heckle **advanced past R32** (beat Hanami) and drew **AURA in R16** (Apps bracket, Jul 4). The tournament itself is an on-chain event (**event ID 2**), with the three characters calling every round.
-- **Status:** Live on 0G mainnet (chainId **16661**). All four 0G primitives load-bearing — strip any one and Heckle stops being Heckle.
+- **Zero Cup:** Heckle **beat Hanami in R32**, **beat AURA in R16**, and is now live in the **Quarter-finals** — QF4, Apps bracket, vs **Turing Pits** (Jul 9–12). The tournament itself is an on-chain event (**event ID 2**), with all **six characters** calling every round.
+- **Status:** Live on 0G mainnet (chainId **16661**). Ten contracts, all load-bearing — strip any one and Heckle stops being Heckle.
 
 ---
 
 ## What's live
 
 - **Character mint** via ERC-7857 INFT — build + mint a heckler at [`/create`](https://tryheckle.xyz/create)
-- **Character portraits on 0G Storage** — a heckler's image is content-addressed on 0G, not a repo asset: `/create` accepts a portrait (downscaled → `/api/upload-image` → 0G Storage), its root rides in the personality blob, and profiles render it back from the gateway. The three seeded hecklers' portraits are on 0G too (e.g. The Pundit's is [`0x8698ab…`](https://indexer-storage-turbo.0g.ai/file?root=0x8698ab864319b8b5797c7007d2bee3c817266eaeb1c73a91c691a0467f709825)), linked verifiably from each profile
-- **Three characters with distinct voices** calling the tournament — **The Pundit** (analyst), **The Hater**, **The Optimist**
-- **Radial bracket** at [`/zero-cup`](https://tryheckle.xyz/zero-cup) — read the hecklers' calls, build your bracket, commit it on-chain; **R16 fixtures** at [`/events/zero-cup-r16`](https://tryheckle.xyz/events/zero-cup-r16)
-- **TEE-attested takes** — 48 across the 16 R32 matchups + 24 across the 8 R16 matchups (3 characters each) + The Pundit's live World Cup calls, every one `valid: true`
+- **Character portraits on 0G Storage** — a heckler's image is content-addressed on 0G, not a repo asset: `/create` accepts a portrait (downscaled → `/api/upload-image` → 0G Storage), its root rides in the personality blob, and profiles render it back from the gateway. All **six flagship hecklers'** portraits are on 0G too (e.g. The Pundit's is [`0x8698ab…`](https://indexer-storage-turbo.0g.ai/file?root=0x8698ab864319b8b5797c7007d2bee3c817266eaeb1c73a91c691a0467f709825)), linked verifiably from each profile
+- **Six characters with distinct voices** calling the tournament, each a real ERC-7857 INFT on `HeckleINFT` and each registered on 0G's live **ERC-8004** IdentityRegistry: **The Pundit** (#0, analyst · agent 1400427), **The Hater** (#3, agent 1400450), **The Optimist** (#4, agent 1400456), **The Homer** (#5, agent 1405225), **The Firebrand** (#6, drama, agent 1405240), **The Contrarian** (#7, agent 1405259)
+- **Radial bracket** at [`/zero-cup`](https://tryheckle.xyz/zero-cup) — the full 32-entrant board, R32 + R16 winners advanced inward and settled, the four live Quarter-finals front and center (Heckle is **QF4, Apps bracket, vs Turing Pits**, Jul 9–12); read the hecklers' calls, build your own bracket, commit it on-chain. Round history at [`/events/zero-cup-r16`](https://tryheckle.xyz/events/zero-cup-r16)
+- **TEE-attested takes** — 72 across R32 + R16 (three hecklers each, `valid: true`), plus all six hecklers' Quarter-final calls now landing, plus The Pundit's live World Cup calls
 - **World Cup mode** at [`/events/world-cup`](https://tryheckle.xyz/events/world-cup) — the **real 2026 World Cup knockouts**, live from [football-data.org](https://football-data.org). The Pundit calls each tie before kickoff; when a match finishes, the true result is written to **`HeckleResolver`** and the call is scored against it. Resolution runs two ways: **autonomously** (the `wc-auto` cron polls the feed and settles new results) or **on demand** (anyone can hit "Resolve results on-chain" — idempotent, no stakes, not a prediction market)
+- **Contract-verified takes** — `HeckleVerifiedTakes.commitVerifiedTake` recovers the EIP-191 signer of the 0G TEE attestation **on-chain** and requires it be a trusted attestor in `HeckleAttestationRegistry`; the UI marks these **"Contract-verified on-chain ✓"**, distinct from the client-side **"TEE replay valid ✓"** anyone can also reproduce in their own browser
+- **Real ERC-7857 INFTs** on `HeckleINFT` — the private personality core (system seed, strategy, owner-gated memory) is encrypted (AES-256-GCM) and sealed on 0G Storage, decryptable only by the current owner; transfer re-encrypts under a fresh data key so the old owner's copy goes stale. Precise on-transfer guarantees at [`/transfer-guarantees`](https://tryheckle.xyz/transfer-guarantees)
+- **Full inference provenance** on every new take — model, the 0G Compute TEE node (provider address), temperature, prompt/completion/total token usage, and verifiability (`TeeML`), all bound into the TEE-signed request hash — shown on the take receipt and [`/storage/[root]`](https://tryheckle.xyz/storage/0xee27109152c63934180319a82f4af4264bd32cab156213f9619f20687d2f62a3)
 - **On-chain sqrt-weighted upvoting** — vote on any take as your character; weight scales with its earned reputation
 - **Proof of Take receipts** at [`/takes/[id]`](https://tryheckle.xyz/takes/1) — text, prediction, confidence, storage root, commit tx, outcome, reputation delta
 - **Client-side TEE replay** — recover the signer in your own browser on any [`/storage/[root]`](https://tryheckle.xyz/storage/0xee27109152c63934180319a82f4af4264bd32cab156213f9619f20687d2f62a3); the moat, explained at [`/proof`](https://tryheckle.xyz/proof)
-- **Graded leaderboard** at [`/leaderboard`](https://tryheckle.xyz/leaderboard) — characters ranked by their real R32 win-rate (scored against actual results)
-- **Character track record + transfer** — correct/wrong/pending per prediction, earned reputation, and ERC-7857 `safeTransferFrom` (history + reputation move with the token)
+- **Graded leaderboard** at [`/leaderboard`](https://tryheckle.xyz/leaderboard) — every character graded live across **both arenas**, Zero Cup (R32 + R16) and the World Cup, scored the moment each result is known / resolved on-chain (World Cup via `HeckleResolver`): **+10 correct, −3 miss**
+- **Character track record + transfer** — correct/wrong/pending per prediction, earned reputation, and ERC-7857 `iTransferFrom` (history + reputation move with the token, personality core re-encrypted to the buyer)
+- **`/explorer`** — a filterable table of every contract-verified take, the ten Heckle contracts, and the ERC-8004 agents
 - **HeckleBrackets** contract for user prediction-set commits · **share cards** on every receipt
 
 ---
@@ -39,10 +43,12 @@ and its entire take history + reputation travel with the token.
 
 | Primitive | What it does in Heckle | Strip it and… |
 |---|---|---|
-| **0G Chain** | Six contracts on 0G mainnet hold every mint, attachment, take commitment, graded reputation, user bracket, sqrt-weighted vote, and real-world result: `HeckleCharacters`, `HeckleEvents`, `HeckleTakes` (reputation lives here — `reputationOf` / `gradePrediction`), `HeckleBrackets`, `HeckleVotes`, `HeckleResolver` (auditable outcome oracle for live events). | nothing settles; characters aren't ownable, predictions aren't scored, votes aren't real, results aren't verifiable. |
-| **0G Compute** | Every take is generated by a TEE-verifiable (`TeeML`) provider via the Direct broker; the response signature recovers to the provider's on-chain `teeSignerAddress`. | no provable, attested takes — just an unaccountable LLM. |
+| **0G Chain** | Ten contracts on 0G mainnet hold every mint, attachment, take commitment, contract-verified take, trusted attestor, graded reputation, user bracket, sqrt-weighted vote, and real-world result: `HeckleCharacters` (V1), `HeckleEvents`, `HeckleTakes` (legacy reputation — `reputationOf` / `gradePrediction`), `HeckleBrackets`, `HeckleVotes`, `HeckleResolver` (auditable outcome oracle for live events), `HeckleAttestationRegistry`, `HeckleVerifiedTakes`, `HeckleINFT`, `HeckleDataVerifier`. | nothing settles; characters aren't ownable, predictions aren't scored, votes aren't real, results aren't verifiable. |
+| **0G Compute** | Every take is generated by a TEE-verifiable (`TeeML`) provider via the Direct broker; the response signature recovers to the provider's on-chain `teeSignerAddress`, and the model, node, temperature, and token usage are all bound into the signed request hash. | no provable, attested takes — just an unaccountable LLM. |
 | **0G Storage** | Every take blob, personality blob, **character portrait**, event-metadata blob, and bracket prediction-set is on Storage, retrievable by Merkle root. | takes can't be replayed or audited; history can't travel with the token. |
-| **ERC-7857 INFTs** | The character *is* the token — ownership, take history, and reputation are all token-bound. | characters can't be assets. |
+| **ERC-7857 INFTs** | Real INFTs now — `HeckleINFT` holds the six flagship characters. The public card (name, portrait, bio, takes, reputation) is open; the private core (system seed, strategy, owner-gated memory) is encrypted and sealed on 0G Storage, decryptable only by the current owner, and re-encrypted on every transfer. | characters can't be assets, and there's nothing stopping a seller from keeping a working copy of what they sold. |
+| **Contract-verified takes** | `HeckleVerifiedTakes` recovers the 0G TEE signer on-chain and checks it against `HeckleAttestationRegistry`'s trusted attestors before a take counts as verified — enforced by a contract, not just client-side replayable. ~99 legacy takes were backfilled as contract-verified. | a take's signature is checked by nobody — replayable by anyone, enforced by no one. |
+| **ERC-8004 identity** | Each flagship is registered on 0G's live ERC-8004 `IdentityRegistry`; the registration file points at the character's ERC-7857 identity (`HeckleINFT` contract + tokenId), making it discoverable in the broader agent ecosystem. | characters have no portable, standards-based identity outside Heckle. |
 
 ---
 
@@ -64,19 +70,29 @@ and its entire take history + reputation travel with the token.
 
 | Contract | Address |
 |---|---|
-| HeckleCharacters (ERC-7857 INFT) | [`0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc`](https://chainscan.0g.ai/address/0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc) |
+| HeckleCharacters (V1) | [`0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc`](https://chainscan.0g.ai/address/0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc) |
 | HeckleEvents | [`0x30F9cF192A93C817d152606225a9C3DEC1d1B616`](https://chainscan.0g.ai/address/0x30F9cF192A93C817d152606225a9C3DEC1d1B616) |
-| HeckleTakes (+ reputation subsystem) | [`0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD`](https://chainscan.0g.ai/address/0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD) |
+| HeckleTakes (legacy reputation — `reputationOf` / `gradePrediction`) | [`0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD`](https://chainscan.0g.ai/address/0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD) |
 | HeckleBrackets (user prediction commits) | [`0xa1139baE1bdC2FC94A400bc8097342dB0A0f3E6B`](https://chainscan.0g.ai/address/0xa1139baE1bdC2FC94A400bc8097342dB0A0f3E6B) |
 | HeckleVotes (sqrt-weighted upvoting) | [`0x86D905467F90a656fE77c60e666F7B9cdC9320bB`](https://chainscan.0g.ai/address/0x86D905467F90a656fE77c60e666F7B9cdC9320bB) |
 | HeckleResolver (real-world result oracle) | [`0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3`](https://chainscan.0g.ai/address/0xE0014a5240DC8414A9684C747F8bc3E653F6e9a3) |
+| HeckleAttestationRegistry (trusted 0G TEE signers) | [`0x8e6213269b003DD6f0B01401ACE1160AF1645403`](https://chainscan.0g.ai/address/0x8e6213269b003DD6f0B01401ACE1160AF1645403) |
+| HeckleVerifiedTakes (contract-verified Proof of Take) | [`0x39c138842E89B9f5935C0B050CE2dA86F21c88dF`](https://chainscan.0g.ai/address/0x39c138842E89B9f5935C0B050CE2dA86F21c88dF) |
+| HeckleINFT (real ERC-7857 INFT — the six flagships) | [`0xD37eB2Ea885ebeB683b3d0511A3807c6F99746cC`](https://chainscan.0g.ai/address/0xD37eB2Ea885ebeB683b3d0511A3807c6F99746cC) |
+| HeckleDataVerifier (ERC-7857 transfer-validity verifier) | [`0x501e6Ff1759f0d762A0F9eD353280b26212df3CC`](https://chainscan.0g.ai/address/0x501e6Ff1759f0d762A0F9eD353280b26212df3CC) |
 
-**All six are source-verified on [chainscan.0g.ai](https://chainscan.0g.ai)** — open any address and
+**All ten are source-verified on [chainscan.0g.ai](https://chainscan.0g.ai)** — open any address and
 read the actual Solidity, matched against the deployed bytecode on the official 0G explorer.
 
-Reputation is not a separate deployment — it's a load-bearing subsystem inside `HeckleTakes`
-(the `Reputation` struct, `reputationOf`, and `gradePrediction`). Addresses are baked into
-`@heckle/shared` as defaults, so a fresh clone connects to the live contracts with zero config.
+Plus [ERC-8004](https://tryheckle.xyz/explorer) — 0G's live Trustless-Agents registries (not deployed
+by us, used as-is): `IdentityRegistry`
+[`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`](https://chainscan.0g.ai/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
+and `ReputationRegistry`
+[`0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`](https://chainscan.0g.ai/address/0x8004BAa17C55a88189AE136b182e5fdA19dE9b63).
+
+Reputation on the legacy path is not a separate deployment — it's a load-bearing subsystem inside
+`HeckleTakes` (the `Reputation` struct, `reputationOf`, and `gradePrediction`). Addresses are baked
+into `@heckle/shared` as defaults, so a fresh clone connects to the live contracts with zero config.
 
 Per-user cost to commit a bracket: **~0.00076 0G** (one `commitBracket` tx; the storage upload is
 sponsored server-side).
@@ -91,7 +107,7 @@ cd heckle
 git submodule update --init --recursive   # Foundry deps (forge-std, OpenZeppelin), if not already
 
 pnpm install
-pnpm contracts:test          # 30 Foundry tests (6 core + 7 brackets + 5 votes + 12 resolver)
+pnpm contracts:test          # 62 Foundry tests (6 core + 7 brackets + 5 votes + 12 resolver + 16 verified takes + 16 INFT)
 pnpm dev                     # http://localhost:3000 — connects to live mainnet contracts by default
 ```
 
@@ -105,14 +121,15 @@ The inference agent and contract (re)deploys need a funded 0G wallet — see **[
 heckle/
 ├─ apps/
 │  ├─ web/                Next.js 16 · React 19 · Tailwind 4 · wagmi/RainbowKit/viem
-│  │                      routes: /, /create, /zero-cup, /events/zero-cup-r16, /characters/[id],
-│  │                      /takes/[id], /leaderboard, /proof, /storage/[root], /dashboard, /about
-│  │                      · /api/upload-{personality,bracket}
+│  │                      routes: /, /create, /zero-cup, /events/zero-cup-r16, /events/world-cup,
+│  │                      /characters/[id], /takes/[id], /leaderboard, /proof, /storage/[root],
+│  │                      /explorer, /transfer-guarantees, /dashboard, /about
+│  │                      · /api/upload-{personality,bracket,image}
 │  └─ inference-agent/    Node · tsx — the character-seller agent: 0G Compute (TEE) take
-│                         generation + 0G Storage uploads + on-chain commits
+│                         generation + 0G Storage uploads + on-chain commits (legacy + contract-verified)
 ├─ packages/
-│  ├─ contracts/          Foundry · Solidity 0.8.24 (cancun) · OZ 5.0.2 — 6 contracts + 30 tests
-│  └─ shared/             ABIs, chain config, addresses, archetypes, Zero Cup data, design tokens
+│  ├─ contracts/          Foundry · Solidity 0.8.24 (cancun) · OZ 5.0.2 — 10 contracts + 62 tests
+│  └─ shared/             ABIs, chain config, addresses, archetypes, Zero Cup + QF data, design tokens
 └─ DEPLOY.md              deploy + seed runbook (wallet-gated steps)
 ```
 

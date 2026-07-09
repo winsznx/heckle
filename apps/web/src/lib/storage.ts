@@ -26,6 +26,17 @@ export interface InferenceAttestation {
   valid?: boolean;
 }
 
+export interface InferenceMeta {
+  /** 0G Compute provider — the TEE node that ran the inference. */
+  provider?: string;
+  /** Model that produced the take (bound into the signed request hash). */
+  model?: string;
+  temperature?: number;
+  /** Attestation type, e.g. "TeeML". */
+  verifiability?: string;
+  usage?: { prompt?: number; completion?: number; total?: number } | null;
+}
+
 export interface TakeBlob {
   text?: string;
   kind?: string;
@@ -34,6 +45,10 @@ export interface TakeBlob {
   triggerId?: string;
   matchupId?: string;
   prediction?: string;
+  /** Legacy: bare model string. Prefer `inference.model` on new takes. */
+  model?: string;
+  /** Full inference provenance recorded so a reader can see how it reasoned. */
+  inference?: InferenceMeta;
   triggeringEvent?: { label?: string; timestamp?: number };
   inferenceAttestation?: InferenceAttestation | null;
   createdAt?: number;

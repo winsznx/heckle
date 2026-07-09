@@ -6,6 +6,7 @@ import {
   ZERO_CUP_R32,
   ZERO_CUP_R32_EVENT_ID,
   ZERO_CUP_R32_EVENT_ROOT,
+  ZERO_CUP_R32_RESULTS,
   type ZeroCupMatchup,
 } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
@@ -25,6 +26,20 @@ function MatchupCard({ m, takes }: { m: ZeroCupMatchup; takes: MatchTake[] }) {
     (t) => t.prediction?.toLowerCase().includes(m.b.name.toLowerCase()),
   ).length;
   const total = takes.length;
+  const winner = ZERO_CUP_R32_RESULTS[m.id];
+  const contestant = (name: string, country: string) => {
+    const won = winner === name;
+    return (
+      <span
+        className={`font-display text-lg font-black leading-none ${
+          winner && !won ? "opacity-40 line-through" : ""
+        }`}
+      >
+        {flagEmoji(country)} {name}
+        {won ? <span className="ml-1 font-mono text-xs no-underline">✓</span> : null}
+      </span>
+    );
+  };
 
   return (
     <Card className="p-5 flex flex-col gap-3">
@@ -35,19 +50,16 @@ function MatchupCard({ m, takes }: { m: ZeroCupMatchup; takes: MatchTake[] }) {
         </span>
       </div>
       <div className="flex flex-col gap-1">
-        <span className="font-display text-lg font-black leading-none">
-          {flagEmoji(m.a.country)} {m.a.name}
-        </span>
+        {contestant(m.a.name, m.a.country)}
         <span className="font-mono text-xs opacity-50">vs</span>
-        <span className="font-display text-lg font-black leading-none">
-          {flagEmoji(m.b.country)} {m.b.name}
-        </span>
+        {contestant(m.b.name, m.b.country)}
       </div>
       <Divider />
       <p className="font-mono text-xs opacity-70">
+        {winner ? `${winner} advanced · ` : ""}
         {total === 0
-          ? "No predictions yet"
-          : `${aVotes} predict ${m.a.name} · ${bVotes} predict ${m.b.name}`}
+          ? "no takes"
+          : `${aVotes} for ${m.a.name} · ${bVotes} for ${m.b.name}`}
       </p>
       {total > 0 ? (
         <button
@@ -97,7 +109,7 @@ export default function ZeroCupR32Page() {
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">Live — voting until Jul 3</Pill>
+          <Pill tone="filled">R32 settled · Jun 28–Jul 3</Pill>
           <span className="font-mono text-xs uppercase opacity-60">
             Event #{eventId}
           </span>
@@ -106,14 +118,16 @@ export default function ZeroCupR32Page() {
           {ZERO_CUP_R32.title}
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          {ZERO_CUP_R32.caption}
+          {ZERO_CUP_R32.caption} All 16 fixtures are settled — each card shows who
+          advanced, and every heckler call was stored on 0G and committed on-chain
+          before the result.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/zero-cup"
             className="inline-flex items-center gap-2 border border-rule bg-ink text-paper px-4 py-2 font-mono text-xs uppercase tracking-wide shadow-lift hover:-translate-y-px transition-transform"
           >
-            View bracket →
+            Live bracket →
           </Link>
           <span className="font-mono text-xs opacity-50">
             Grid view · mobile-friendly

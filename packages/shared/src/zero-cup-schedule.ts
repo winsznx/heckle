@@ -45,4 +45,4 @@ export const ZERO_CUP_PRIZE_POOL = "$17,000";
 export const ZERO_CUP_CHAMPION_TOTAL = "$8,500";
 
 /** Which round Heckle is currently in. Bump as the tournament advances. */
-export const ZERO_CUP_CURRENT_STAGE = "r16";
+export const ZERO_CUP_CURRENT_STAGE = "qf";

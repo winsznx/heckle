@@ -23,6 +23,29 @@ export const ZERO_CUP_R32_RESULTS: Record<string, string> = {
   R32_16: "AURA",
 };
 
+/**
+ * Official Round of 16 outcomes, from the Quarter-final draw (0g.ai/arena).
+ * Keyed by the inner R16 node id ("R16_1"…"R16_8"), so they seed straight onto
+ * the radial board and the Quarter-final ring resolves to the real pairings.
+ * Heckle came through the Apps bracket (beat AURA in R16) into QF4 vs Turing Pits.
+ */
+export const ZERO_CUP_R16_RESULTS: Record<string, string> = {
+  R16_1: "Soul",
+  R16_2: "AskZero",
+  R16_3: "Zegon",
+  R16_4: "Zerun",
+  R16_5: "4lpha AI",
+  R16_6: "Civilization-0",
+  R16_7: "Turing Pits",
+  R16_8: "Heckle",
+};
+
+/** Every settled node so far — R32 winners plus the R16 winners. */
+export const ZERO_CUP_SETTLED: Record<string, string> = {
+  ...ZERO_CUP_R32_RESULTS,
+  ...ZERO_CUP_R16_RESULTS,
+};
+
 /** Reputation deltas (maybe.md scoring). */
 export const REP_SCORING = {
   correct: 10,
@@ -33,12 +56,15 @@ export const REP_SCORING = {
 
 export type PredictionOutcome = "correct" | "wrong" | "pending";
 
-/** Grade a stored prediction against known results. `pending` = no result yet. */
+/**
+ * Grade a stored prediction against known results — every settled Zero Cup round
+ * (R32 + R16). `pending` = the matchup has no result yet (e.g. the live QF).
+ */
 export function gradePrediction(
   matchupId: string,
   prediction: string | null | undefined,
 ): PredictionOutcome {
-  const actual = ZERO_CUP_R32_RESULTS[matchupId];
+  const actual = ZERO_CUP_SETTLED[matchupId];
   if (!actual) return "pending";
   if (!prediction) return "pending";
   return prediction.trim().toLowerCase() === actual.toLowerCase()

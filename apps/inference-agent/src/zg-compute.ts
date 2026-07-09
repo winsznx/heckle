@@ -144,9 +144,17 @@ export interface Attestation {
   valid: boolean;
 }
 
+export interface TokenUsage {
+  prompt: number;
+  completion: number;
+  total: number;
+}
+
 export interface TakeResult {
   text: string;
   attestation: Attestation | null;
+  /** Token accounting for this response, when the provider reports usage. */
+  usage: TokenUsage | null;
 }
 
 /**
@@ -192,6 +200,15 @@ export async function generateTake(
     throw new Error("0G Compute: provider returned empty completion");
   }
 
+  const u = completion.usage;
+  const usage: TokenUsage | null = u
+    ? {
+        prompt: u.prompt_tokens ?? 0,
+        completion: u.completion_tokens ?? 0,
+        total: u.total_tokens ?? 0,
+      }
+    : null;
+
   const chatId = response.headers.get("ZG-Res-Key") ?? completion.id;
 
   let attestation: Attestation | null = null;
@@ -230,5 +247,5 @@ export async function generateTake(
     );
   }
 
-  return { text: text.trim(), attestation };
+  return { text: text.trim(), attestation, usage };
 }

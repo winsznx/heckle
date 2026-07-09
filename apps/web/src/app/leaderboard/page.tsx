@@ -4,13 +4,15 @@ import { useMemo } from "react";
 import Link from "next/link";
 import {
   ZERO_CUP_R32_EVENT_ID,
+  WORLD_CUP_EVENT_ID,
   gradePrediction,
   REP_SCORING,
 } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
-import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
+import { useZeroCupTakes, type MatchTake } from "@/lib/useZeroCupTakes";
+import { useWorldCupWinners } from "@/lib/useWorldCup";
 
 interface Standing {
   characterId: string;
@@ -24,33 +26,56 @@ interface Standing {
   rep: number;
 }
 
+type Outcome = "correct" | "wrong" | "pending";
+
 export default function LeaderboardPage() {
-  const { takes } = useZeroCupTakes(ZERO_CUP_R32_EVENT_ID);
+  // Reputation is derived live from every graded arena: Zero Cup (R32 + R16) and
+  // the World Cup, the moment each result is known / resolved on-chain.
+  const { takes: zeroCupTakes } = useZeroCupTakes(ZERO_CUP_R32_EVENT_ID);
+  const { takes: worldCupTakes } = useZeroCupTakes(WORLD_CUP_EVENT_ID);
+  const { winners: wcWinners } = useWorldCupWinners();
 
   const board = useMemo<Standing[]>(() => {
     const map = new Map<string, Standing>();
-    for (const t of takes ?? []) {
-      const s =
-        map.get(t.characterId) ??
-        {
-          characterId: t.characterId,
-          name: t.characterName ?? `Heckler #${t.characterId}`,
-          archetypeLabel: t.archetypeLabel ?? "",
-          correct: 0,
-          wrong: 0,
-          pending: 0,
-          graded: 0,
-          acc: null,
-          rep: 0,
-        };
-      if (t.matchupId) {
-        const o = gradePrediction(t.matchupId, t.prediction);
-        if (o === "correct") s.correct++;
-        else if (o === "wrong") s.wrong++;
-        else s.pending++;
-      }
+    const ensure = (t: MatchTake): Standing => {
+      const existing = map.get(t.characterId);
+      if (existing) return existing;
+      const s: Standing = {
+        characterId: t.characterId,
+        name: t.characterName ?? `Heckler #${t.characterId}`,
+        archetypeLabel: t.archetypeLabel ?? "",
+        correct: 0,
+        wrong: 0,
+        pending: 0,
+        graded: 0,
+        acc: null,
+        rep: 0,
+      };
       map.set(t.characterId, s);
+      return s;
+    };
+    const tally = (s: Standing, o: Outcome) => {
+      if (o === "correct") s.correct++;
+      else if (o === "wrong") s.wrong++;
+      else s.pending++;
+    };
+
+    for (const t of zeroCupTakes ?? []) {
+      if (!t.matchupId) continue;
+      tally(ensure(t), gradePrediction(t.matchupId, t.prediction));
     }
+    for (const t of worldCupTakes ?? []) {
+      if (!t.matchupId) continue;
+      const winner = wcWinners.get(t.matchupId);
+      const o: Outcome = !winner
+        ? "pending"
+        : t.prediction &&
+            t.prediction.trim().toLowerCase() === winner.toLowerCase()
+          ? "correct"
+          : "wrong";
+      tally(ensure(t), o);
+    }
+
     return [...map.values()]
       .map((s) => {
         const graded = s.correct + s.wrong;
@@ -62,13 +87,13 @@ export default function LeaderboardPage() {
         };
       })
       .sort((a, b) => b.rep - a.rep || b.correct - a.correct);
-  }, [takes]);
+  }, [zeroCupTakes, worldCupTakes, wcWinners]);
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">Zero Cup R32</Pill>
+          <Pill tone="filled">Zero Cup + World Cup</Pill>
           <span className="font-mono text-xs uppercase tracking-wide opacity-60">
             Scored by reality
           </span>
@@ -77,10 +102,11 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          Not vibes — verifiable foresight. Every character graded on its
-          on-chain predictions against the real R32 results. Reputation is
-          earned: {REP_SCORING.correct} for a correct call, {REP_SCORING.wrong}{" "}
-          for a miss.
+          Not vibes — verifiable foresight. Every character graded on its on-chain
+          predictions against real results, across every arena: the Zero Cup
+          bracket (R32 &amp; R16) and the World Cup, each scored the moment its
+          result is resolved on-chain. Reputation is earned:{" "}
+          {REP_SCORING.correct} for a correct call, {REP_SCORING.wrong} for a miss.
         </p>
       </header>
 

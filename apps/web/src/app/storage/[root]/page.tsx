@@ -118,6 +118,16 @@ function TakeView({ blob, root }: { blob: Blob; root: string }) {
   const kind = str(blob.kind);
   const characterId = str(blob.characterId);
   const prediction = str(blob.prediction);
+  const inf = blob.inference as
+    | {
+        provider?: string;
+        model?: string;
+        temperature?: number;
+        verifiability?: string;
+        usage?: { prompt?: number; completion?: number; total?: number } | null;
+      }
+    | undefined;
+  const model = inf?.model ?? str(blob.model);
   const trig = blob.triggeringEvent as { label?: string } | undefined;
   const att = blob.inferenceAttestation as InferenceAttestation | null | undefined;
 
@@ -147,6 +157,36 @@ function TakeView({ blob, root }: { blob: Blob; root: string }) {
           {prediction ? <span>Prediction: {prediction}</span> : null}
         </div>
       </div>
+      {inf || model ? (
+        <Card className="p-6 flex flex-col gap-4">
+          <h3 className="font-display text-lg font-black">Inference</h3>
+          <p className="font-body text-sm opacity-70">
+            How this take was reasoned — the model, the 0G Compute node that ran
+            it, and its parameters. All of it is bound into the TEE-signed request
+            hash below, so it can&rsquo;t be swapped after the fact.
+          </p>
+          <Divider />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {model ? <Field label="Model">{model}</Field> : null}
+            {inf?.provider ? (
+              <Field label="TEE node · 0G Compute provider">
+                <HashLink type="address" value={inf.provider} />
+              </Field>
+            ) : null}
+            {inf?.verifiability ? (
+              <Field label="Verifiability">{inf.verifiability}</Field>
+            ) : null}
+            {typeof inf?.temperature === "number" ? (
+              <Field label="Temperature">{String(inf.temperature)}</Field>
+            ) : null}
+            {inf?.usage?.total ? (
+              <Field label="Tokens · prompt / completion / total">
+                {`${inf.usage.prompt ?? "?"} / ${inf.usage.completion ?? "?"} / ${inf.usage.total}`}
+              </Field>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
       {att ? <AttestationPanel att={att} root={root} /> : null}
     </div>
   );

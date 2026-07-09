@@ -6,6 +6,11 @@ Target: **0G mainnet** (chainId **16661**, standard cancun EVM — **NOT** ZKsyn
 > Recommendation: do a free dry-run on **Galileo testnet (16602)** first to confirm cancun bytecode
 > is accepted, then repeat against mainnet. Faucet: https://faucet.0g.ai
 
+> The live deployment already has all **ten** Heckle contracts running on 0G mainnet, baked into
+> `@heckle/shared` (`packages/shared/src/addresses.ts`) as the defaults — a fresh clone connects to
+> them with zero config. You only need this runbook for a from-scratch redeploy, or to re-run one piece
+> (e.g. the ERC-7857 migration, an attestor sync, or the contract-verified backfill).
+
 ---
 
 ## 0. Prereqs
@@ -15,8 +20,9 @@ cd /Users/mac/heckle
 cp .env.example .env        # then fill DEPLOYER_PRIVATE_KEY and AGENT_PRIVATE_KEY
 ```
 
-Fund the **deployer** address with real 0G (mainnet has no faucet). Three small contracts —
-estimated well under ~1 0G total at current gas. Confirm with `--estimate` before broadcasting.
+Fund the **deployer** address with real 0G (mainnet has no faucet). Ten small contracts across steps
+2 and 2a — the original three are estimated well under ~1 0G total at current gas; budget more if
+redeploying the full set from scratch. Confirm with `--estimate` before broadcasting.
 
 ---
 
@@ -41,26 +47,79 @@ forge script script/Deploy.s.sol:Deploy \
   --private-key $DEPLOYER_PRIVATE_KEY \
   --broadcast -vvv
 ```
-Copy the three logged addresses (HeckleCharacters / HeckleEvents / HeckleTakes).
+Copy the three logged addresses (HeckleCharacters / HeckleEvents / HeckleTakes). This is the original
+group-stage trio (V1) — the remaining seven contracts are separate deploys, below.
+
+## 2a. Deploy the remaining seven contracts
+
+Each is its own non-broadcasting script; add `--broadcast --rpc-url` the same way as step 2.
+
+```bash
+cd packages/contracts
+forge script script/DeployBrackets.s.sol:DeployBrackets --broadcast --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY -vvv
+forge script script/DeployVotes.s.sol:DeployVotes --broadcast --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY -vvv
+forge script script/DeployResolver.s.sol:DeployResolver --broadcast --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY -vvv
+forge script script/DeployVerifiedTakes.s.sol:DeployVerifiedTakes --broadcast --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY -vvv
+forge script script/DeployINFT.s.sol:DeployINFT --broadcast --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY -vvv
+```
+
+Notes:
+- `DeployVotes` hardcodes the live `HeckleCharacters`/`HeckleTakes` addresses — update the constants in
+  the script if you redeployed those in step 2.
+- `DeployResolver` makes the broadcasting deployer the sole resolver.
+- `DeployVerifiedTakes` deploys `HeckleAttestationRegistry` (rooted in 0G's `InferenceServing` at
+  `0x47340d900bdFec2BD393c626E12ea0656F938d84`) and `HeckleVerifiedTakes` together — copy both logged
+  addresses.
+- `DeployINFT` deploys `HeckleDataVerifier` + `HeckleINFT` together; the oracle signer defaults to the
+  deployer/agent wallet (`0xbF7EF900E2dB365455B91Fb133f78Fc70114Bf31`) — override with `HECKLE_ORACLE` if
+  you want a different oracle. Copy both logged addresses; after this deploy, run the ERC-7857 migration
+  (step 10) before minting anything new against it.
 
 ## 3. Wire addresses into env
 
-Paste into `/Users/mac/heckle/.env`:
+Paste into `/Users/mac/heckle/.env` (client-visible, for the web app):
 ```
 NEXT_PUBLIC_HECKLE_CHARACTERS=0x...
 NEXT_PUBLIC_HECKLE_EVENTS=0x...
 NEXT_PUBLIC_HECKLE_TAKES=0x...
-HECKLE_CHARACTERS=0x...   # (mirror for the agent)
+NEXT_PUBLIC_HECKLE_BRACKETS=0x...
+NEXT_PUBLIC_HECKLE_VOTES=0x...
+NEXT_PUBLIC_HECKLE_RESOLVER=0x...
+NEXT_PUBLIC_HECKLE_ATTESTATION_REGISTRY=0x...
+NEXT_PUBLIC_HECKLE_VERIFIED_TAKES=0x...
+NEXT_PUBLIC_HECKLE_INFT=0x...
+NEXT_PUBLIC_HECKLE_DATA_VERIFIER=0x...
+```
+And the server-side mirrors the inference agent reads directly:
+```
+HECKLE_CHARACTERS=0x...
 HECKLE_EVENTS=0x...
 HECKLE_TAKES=0x...
+HECKLE_VERIFIED_TAKES=0x...
+HECKLE_RESOLVER=0x...
+HECKLE_INFT=0x...
+HECKLE_DATA_VERIFIER=0x...
 ```
 
-## 4. Authorize the inference agent as a Take committer
+## 4. Authorize the inference agent as a committer / trusted attestor
 
+The legacy path (`HeckleTakes`):
 ```bash
 cast send $NEXT_PUBLIC_HECKLE_TAKES "setCommitter(address,bool)" <AGENT_ADDRESS> true \
   --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY
 ```
+
+The contract-verified path — authorize the agent as a `HeckleVerifiedTakes` committer, then register the
+0G Compute provider's TEE signer as a trusted attestor on `HeckleAttestationRegistry` (owner-only; pulls
+the signer straight from 0G's `InferenceServing`):
+```bash
+cast send $NEXT_PUBLIC_HECKLE_VERIFIED_TAKES "setCommitter(address,bool)" <AGENT_ADDRESS> true \
+  --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY
+
+cast send $NEXT_PUBLIC_HECKLE_ATTESTATION_REGISTRY "syncFromOG(address)" <PROVIDER_ADDRESS> \
+  --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY
+```
+A take committed against an attestor that isn't registered here reverts — that's the enforcement.
 
 ## 5. Register the demo event (owner action)
 
@@ -126,3 +185,55 @@ pnpm --filter @heckle/inference-agent exec tsx src/wc-real.ts --confirm
 **Manual resolution** — no cron required. Anyone can `POST /api/worldcup/resolve` (the "Resolve results
 on-chain" button on `/events/world-cup`); it settles any finished-but-unsettled result, idempotently,
 behind a short cooldown. Not a prediction market — no stakes, it only writes the true outcome.
+
+---
+
+## 10. ERC-7857 migration (V1 characters → HeckleINFT) — **spends 0G, irreversible**
+
+Run only after `DeployINFT` (step 2a). Migrates the V1 characters (tokenIds 0/1/2) onto the real
+ERC-7857 `HeckleINFT`, preserving tokenIds: splits the public card (name, portrait, bio) from the
+private core (system seed, strategy, memory), encrypts the private core (AES-256-GCM) and uploads it
+to 0G Storage, then `migrateMint`s each token with the ciphertext's data hash.
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/migrate-inft.ts --confirm
+```
+
+Then seal the migration on-chain so public minting can't squat the migrated tokenIds:
+```bash
+cast send $NEXT_PUBLIC_HECKLE_INFT "sealMigration()" \
+  --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY
+```
+
+## 11. Mint the remaining flagship characters — **spends 0G, irreversible**
+
+Mints the newer flagships (The Homer #5, The Firebrand #6, The Contrarian #7) directly on `HeckleINFT`
+— portrait to 0G Storage, personality core encrypted and sealed, explorer-compatible card metadata
+uploaded, then minted:
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/mint-new-characters.ts --confirm
+```
+
+## 12. Register ERC-8004 identity — **spends 0G**
+
+Registers each flagship on 0G's live ERC-8004 `IdentityRegistry`; the registration file points at the
+character's ERC-7857 identity (`HeckleINFT` contract + tokenId). Run only after the character is minted
+on `HeckleINFT` (steps 10/11):
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/register-erc8004.ts --confirm
+```
+
+## 13. Contract-verify legacy takes (backfill) — **spends 0G**
+
+Retroactively runs every existing `HeckleTakes.TakeCommitted` take through `HeckleVerifiedTakes`: the
+contract re-recovers the 0G TEE signer and only records it if the signer is a registered attestor
+(step 4). Idempotent — already-verified roots and unverifiable takes are skipped.
+
+```bash
+pnpm --filter @heckle/inference-agent exec tsx src/backfill-verified.ts --confirm
+```
+
+New takes generated by `qf-predict.ts`, `zero-cup-predict.ts`, and `wc-real.ts` commit straight to
+`HeckleVerifiedTakes` — no separate backfill needed for those going forward.

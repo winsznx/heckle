@@ -2,22 +2,40 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ZERO_CUP_R16, ZERO_CUP_R32_EVENT_ID } from "@heckle/shared";
+import {
+  ZERO_CUP_R16,
+  ZERO_CUP_R16_RESULTS,
+  ZERO_CUP_R32_EVENT_ID,
+} from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { RadialBracket } from "@/components/bracket/RadialBracket";
 import { MatchupPanel } from "@/components/bracket/MatchupPanel";
 import { CommitBar } from "@/components/bracket/CommitBar";
-import { R16_DEF } from "@/lib/bracket-data";
+import { R16_DEF, type Round } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
+
+// The 8 survivors are settled — everything from the live Quarter-finals inward
+// is what a visitor predicts.
+const SETTLED_ROUNDS: Round[] = ["R16"];
+const PREDICT_NODES = R16_DEF.nodes.filter(
+  (n) => !SETTLED_ROUNDS.includes(n.round),
+);
+// Land on Heckle's settled R16 win (beat AURA) — Apps bracket, R16 #8.
+const HECKLE_R16_ID = "R16_8";
 
 export default function ZeroCupR16Page() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  const state = useBracketState(eventId, R16_DEF);
-  const [selectedId, setSelectedId] = useState<string>("R16_1");
+  // Seed the settled R16 winners (locked) so the survivors show their result and
+  // advance into the live Quarter-final ring.
+  const state = useBracketState(eventId, R16_DEF, ZERO_CUP_R16_RESULTS);
+  const [selectedId, setSelectedId] = useState<string>(HECKLE_R16_ID);
+
+  const innerPicked = PREDICT_NODES.filter((n) => state.picks[n.id]).length;
+  const canCommit = Boolean(state.champion);
 
   const countryOf = useMemo(() => {
     const m = new Map<string, string>();
@@ -29,16 +47,21 @@ export default function ZeroCupR16Page() {
   }, []);
 
   const selectedNode = R16_DEF.byId.get(selectedId) ?? null;
-  const selectedTakes = selectedNode?.matchupId
-    ? byMatchup.get(selectedNode.matchupId) ?? []
+  const selectedTakes = selectedNode
+    ? byMatchup.get(selectedNode.matchupId ?? selectedNode.id) ?? []
     : [];
 
+  const roundSiblings = selectedNode
+    ? R16_DEF.nodes.filter((n) => n.round === selectedNode.round)
+    : [];
+  const canNavigate = roundSiblings.length > 1;
+
   function navigate(dir: -1 | 1) {
-    const outer = R16_DEF.outerNodes;
-    const idx = outer.findIndex((n) => n.id === selectedId);
+    if (roundSiblings.length === 0) return;
+    const idx = roundSiblings.findIndex((n) => n.id === selectedId);
     const base = idx === -1 ? 0 : idx;
-    const next = (base + dir + outer.length) % outer.length;
-    setSelectedId(outer[next].id);
+    const next = (base + dir + roundSiblings.length) % roundSiblings.length;
+    setSelectedId(roundSiblings[next].id);
   }
 
   if (eventId === null) {
@@ -53,15 +76,17 @@ export default function ZeroCupR16Page() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">Live — R16 · Jul 4</Pill>
+          <Pill tone="filled">R16 settled · Jul 4–8</Pill>
         </div>
         <h1 className="font-display font-black text-4xl md:text-6xl leading-none">
           {ZERO_CUP_R16.title}
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          The 16 survivors, on the same radial canvas. Tap any matchup to hear the
-          three hecklers&rsquo; calls — each a TEE-attested take, stored on 0G and
-          committed on-chain before the result — and build your own R16 bracket.
+          The 8 survivors, on their own radial canvas — the Round of 16 is
+          settled. Tap any matchup to inspect the result and the
+          hecklers&rsquo; calls (each a TEE-attested take, stored on 0G and
+          committed on-chain before the result), then predict the live
+          Quarter-finals inward. Heckle beat AURA here and advanced.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link
@@ -74,7 +99,7 @@ export default function ZeroCupR16Page() {
             href="/zero-cup"
             className="inline-flex items-center gap-2 border border-rule bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wide hover:bg-whisper transition-colors"
           >
-            R32 bracket
+            Full 32-entrant board
           </Link>
         </div>
       </header>
@@ -98,6 +123,8 @@ export default function ZeroCupR16Page() {
           chosen={selectedNode ? state.picks[selectedNode.id] : undefined}
           onPick={state.pick}
           onNavigate={navigate}
+          canNavigate={canNavigate}
+          locked={selectedNode ? SETTLED_ROUNDS.includes(selectedNode.round) : false}
           takes={selectedTakes}
         />
       </div>
@@ -105,10 +132,10 @@ export default function ZeroCupR16Page() {
       <CommitBar
         eventId={eventId}
         predictionSet={state.predictionSet}
-        picked={state.outerCount}
-        totalCount={R16_DEF.outerCount}
-        roundLabel="R16"
-        canCommit={state.canCommit}
+        picked={innerPicked}
+        totalCount={PREDICT_NODES.length}
+        roundLabel="predictions"
+        canCommit={canCommit}
         champion={state.champion}
         onClear={state.clear}
       />

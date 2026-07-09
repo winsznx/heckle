@@ -1,9 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import { usePublicClient } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import type { WcFixture, WcOutcome } from "@heckle/shared";
 import { resolverContract, contractConfigured } from "./contracts";
+
+/** The advancing side of a finished fixture, by team name (or "Draw"). */
+export function winnerName(f: WcFixture): string | null {
+  if (f.score.outcome === "HOME") return f.home.name;
+  if (f.score.outcome === "AWAY") return f.away.name;
+  if (f.score.outcome === "DRAW") return "Draw";
+  return null;
+}
 
 export interface WorldCupData {
   configured: boolean;
@@ -93,4 +102,29 @@ export function useResolverResults(
   });
 
   return data ?? new Map();
+}
+
+/**
+ * matchId(string) → winner name, for World Cup games that are FINALIZED on-chain
+ * (HeckleResolver). Reputation is graded off this, so a WC prediction only counts
+ * once its match is actually resolved on-chain — resolving the game is what moves
+ * the score. Decisive knockouts only (a "Draw" carries no advancing side).
+ */
+export function useWorldCupWinners(): {
+  winners: Map<string, string>;
+  finalizedCount: number;
+} {
+  const { data } = useWorldCup();
+  const recentIds = data.recent.map((f) => f.matchId);
+  const resolved = useResolverResults(recentIds);
+
+  return useMemo(() => {
+    const winners = new Map<string, string>();
+    for (const f of data.recent) {
+      if (!resolved.get(f.matchId)?.finalized) continue;
+      const w = winnerName(f);
+      if (w && w !== "Draw") winners.set(String(f.matchId), w);
+    }
+    return { winners, finalizedCount: winners.size };
+  }, [data.recent, resolved]);
 }

@@ -6,6 +6,7 @@ import {
   charactersContract,
   takesContract,
   verifiedTakesContract,
+  inftContract,
   contractConfigured,
 } from "./contracts";
 import {
@@ -138,8 +139,12 @@ export function useZeroCupTakes(eventId: number | null): {
 
       const ids = Array.from(new Set(deduped.map((t) => t.characterId)));
       const charMap = new Map<string, { name: string; archetypeLabel: string }>();
+      const EMPTY_ROOT = /^0x0*$/;
       await Promise.all(
         ids.map(async (cid) => {
+          // Legacy V1 characters carry their name in a personality blob. The new
+          // ERC-7857 hecklers (5/6/7) are INFT-only and store the name on-chain.
+          // Try V1 first, then fall back to the INFT identity.
           try {
             const meta = await publicClient.readContract({
               address: charactersContract.address,
@@ -147,9 +152,25 @@ export function useZeroCupTakes(eventId: number | null): {
               functionName: "characterOf",
               args: [BigInt(cid)],
             });
+            if (EMPTY_ROOT.test(meta.personalityRoot)) throw new Error("no v1 character");
             const pblob = await fetchBlob<PersonalityBlob>(meta.personalityRoot);
             charMap.set(cid, {
               name: pblob?.name ?? `Heckler #${cid}`,
+              archetypeLabel: archetype(archetypeIdFromIndex(meta.archetype)).label,
+            });
+            return;
+          } catch {
+            /* fall through to the INFT identity */
+          }
+          try {
+            const meta = await publicClient.readContract({
+              address: inftContract.address,
+              abi: inftContract.abi,
+              functionName: "characterOf",
+              args: [BigInt(cid)],
+            });
+            charMap.set(cid, {
+              name: meta.name || `Heckler #${cid}`,
               archetypeLabel: archetype(archetypeIdFromIndex(meta.archetype)).label,
             });
           } catch {
