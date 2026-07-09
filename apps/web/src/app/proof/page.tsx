@@ -31,8 +31,8 @@ const CHAIN = [
   },
   {
     n: "04",
-    title: "Committed on-chain",
-    body: "The storage root is committed to the HeckleTakes contract with a timestamp. The call is locked before the outcome is known — it can't be edited or backdated.",
+    title: "Committed & verified on-chain",
+    body: "The storage root is committed on-chain with a timestamp — locked before the outcome is known, uneditable. HeckleVerifiedTakes then re-recovers the TEE signer on-chain and records the take only if it's a registered 0G signer: verified by contract, not just replayable in a browser.",
   },
   {
     n: "05",

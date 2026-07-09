@@ -20,10 +20,10 @@ const OWNER = "0xbF7EF900E2dB365455B91Fb133f78Fc70114Bf31";
 const GATEWAY = `https://indexer-storage-turbo.0g.ai/file?root=${TAKE_ROOT}`;
 
 const PRIMITIVES = [
-  { name: "0G Chain", body: "Character ownership (ERC-7857), take commitments, graded reputation — six contracts." },
-  { name: "0G Storage", body: "The personality blob, event metadata, and the full take content, addressed by root." },
-  { name: "0G Compute", body: "Inference inside a TEE; the signature recovers to the provider's on-chain signer." },
-  { name: "0G Data Availability", body: "The committed root stays verifiable and available — anyone can confirm it." },
+  { name: "0G Chain", body: "Character ownership, contract-verified take commitments, graded reputation — ten source-verified contracts." },
+  { name: "0G Storage", body: "The encrypted personality core, event metadata, and the full take content, addressed by root." },
+  { name: "0G Compute", body: "Inference inside a TEE; the signature is recovered and checked by contract against the on-chain signer." },
+  { name: "ERC-7857 INFT", body: "Real INFTs: encrypted core, oracle-gated transfer; the public record travels with the tokenId." },
 ] as const;
 
 function Step({

@@ -21,7 +21,7 @@ const CAPABILITIES = [
   {
     n: "01",
     title: "Mint a character you own",
-    body: "Pick one of six archetypes (analyst, hater, optimist, homer, drama, contrarian), write a short brief, choose a black-and-white palette. It's minted as an ERC-7857 INFT on 0G mainnet — the personality blob lives on 0G Storage, the token is yours.",
+    body: "Pick one of six archetypes (analyst, hater, optimist, homer, drama, contrarian), write a short brief, choose a black-and-white palette. It's minted on 0G mainnet — the public card (name, portrait, record) stays public, while the private personality core is encrypted on 0G Storage. The token is yours.",
     href: "/create",
     cta: "Create a heckler",
   },
@@ -80,27 +80,31 @@ const PRIMITIVES = [
   {
     name: "0G Chain",
     role: "Ownership + settlement",
-    body: "Six contracts hold every mint, event attachment, take commitment, graded reputation, user bracket, sqrt-weighted vote, and real-world result.",
+    body: "Ten source-verified contracts hold every mint, event, contract-verified take, graded reputation, user bracket, sqrt-weighted vote, and real-world result.",
   },
   {
     name: "0G Storage",
     role: "Permanence",
-    body: "Personality blobs, event metadata, and every full take — content-addressed by Merkle root, retrievable forever, no server to vanish.",
+    body: "Personality cores (encrypted), event metadata, and every full take — content-addressed by Merkle root, retrievable forever, no server to vanish.",
   },
   {
     name: "0G Compute",
     role: "Voice",
-    body: "TEE-attested inference per take; the signature recovers to the provider's on-chain signer, replayable in your own browser.",
+    body: "TEE-attested inference per take; the signature is recovered and checked BY contract against the on-chain signer — not just replayable.",
   },
   {
-    name: "0G Data Availability",
-    role: "Trust",
-    body: "Committed roots stay verifiable and available — anyone can confirm what a character said, and exactly when.",
+    name: "ERC-7857 INFT",
+    role: "Ownership of the mind",
+    body: "The flagship characters are real INFTs — encrypted personality core, oracle-gated transfer, and a public record keyed to the token, not the wallet.",
   },
 ] as const;
 
 const CONTRACTS = [
-  { name: "HeckleCharacters", note: "ERC-7857 INFT — the character itself", addr: "0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc" },
+  { name: "HeckleINFT", note: "ERC-7857 INFT — flagship characters (encrypted core)", addr: "0xD37eB2Ea885ebeB683b3d0511A3807c6F99746cC" },
+  { name: "HeckleDataVerifier", note: "ERC-7857 TEE-oracle transfer verifier", addr: "0x501e6Ff1759f0d762A0F9eD353280b26212df3CC" },
+  { name: "HeckleVerifiedTakes", note: "contract-verified Proof of Take", addr: "0x39c138842E89B9f5935C0B050CE2dA86F21c88dF" },
+  { name: "HeckleAttestationRegistry", note: "trusted 0G TEE signers", addr: "0x8e6213269b003DD6f0B01401ACE1160AF1645403" },
+  { name: "HeckleCharacters", note: "ERC-721 (V1 / user characters)", addr: "0xfFB4A91Ff9C8dD16d9b0e0665d869392C8fCC0bc" },
   { name: "HeckleEvents", note: "events + character attachments", addr: "0x30F9cF192A93C817d152606225a9C3DEC1d1B616" },
   { name: "HeckleTakes", note: "take commitments + reputation", addr: "0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD" },
   { name: "HeckleBrackets", note: "user bracket commits", addr: "0xa1139baE1bdC2FC94A400bc8097342dB0A0f3E6B" },

@@ -54,7 +54,7 @@ export default async function Image() {
         </div>
 
         <div style={{ display: "flex", fontSize: 24, letterSpacing: 1 }}>
-          AI fan personalities · TEE-attested takes · 0G Storage
+          ERC-7857 INFTs · Contract-verified takes · 0G mainnet
         </div>
       </div>
     ),

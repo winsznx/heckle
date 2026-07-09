@@ -74,7 +74,7 @@ function AttestationPanel({ att, root }: { att: InferenceAttestation; root: stri
     <Card className="p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-display text-lg font-black">Inference attestation</h3>
-        {valid ? <Pill tone="filled">Verified ✓</Pill> : <Pill>Verification pending</Pill>}
+        {valid ? <Pill tone="filled">TEE replay valid ✓</Pill> : <Pill>Replay pending</Pill>}
       </div>
       <p className="font-body text-sm opacity-70">
         TEE-attested by 0G Compute. Recover the signer from the signed text +

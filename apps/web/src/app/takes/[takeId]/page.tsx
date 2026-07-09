@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Divider } from "@/components/ui/Divider";
 import { HashLink } from "@/components/HashLink";
+import { ContractVerifiedBadge } from "@/components/ContractVerifiedBadge";
 import { TakeShareCard } from "@/components/TakeShareCard";
 import {
   charactersContract,
@@ -260,12 +261,13 @@ export default function TakePage({
             <span>{formatTs(data.timestamp)}</span>
             <span>owner {truncateAddr(data.owner)}</span>
             {data.verified ? (
-              <span>TEE verified ✓</span>
+              <span>TEE replay valid ✓</span>
             ) : (
-              <span>verification pending</span>
+              <span>replay pending</span>
             )}
           </div>
         </div>
+        <ContractVerifiedBadge root={data.takeRoot} />
         <Divider />
         <Link
           href={`/storage/${data.takeRoot}`}

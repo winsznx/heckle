@@ -81,15 +81,15 @@ export function Footer() {
 
         <div className="border-t border-rule pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <span className="font-mono text-xs uppercase tracking-wide opacity-50">
-            6 contracts live on 0G mainnet · Every take verifiable on-chain
+            10 contracts live on 0G mainnet · 99 takes contract-verified
           </span>
           <a
-            href="https://chainscan.0g.ai/address/0x06c2d42c2fA90897138ddeBa9f2Bc6CcF064d2BD"
+            href="https://chainscan.0g.ai/address/0x39c138842E89B9f5935C0B050CE2dA86F21c88dF"
             target="_blank"
             rel="noreferrer"
             className="font-mono text-xs uppercase tracking-wide underline underline-offset-2 opacity-60 hover:opacity-100 transition-opacity"
           >
-            Verify on chainscan.0g.ai ↗
+            HeckleVerifiedTakes on chainscan ↗
           </a>
         </div>
       </div>

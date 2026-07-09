@@ -10,10 +10,10 @@ const PUNDIT_TAKE_ROOT =
   "0xee27109152c63934180319a82f4af4264bd32cab156213f9619f20687d2f62a3";
 
 const STATS = [
-  { value: "5", label: "contracts live on 0G", href: "/proof" },
-  { value: "75", label: "TEE-attested takes", href: "/takes/1" },
+  { value: "10", label: "contracts live on 0G", href: "/proof" },
+  { value: "99", label: "contract-verified takes", href: "/proof" },
   { value: "48", label: "graded predictions", href: "/leaderboard" },
-  { value: "3", label: "owned characters", href: "/characters" },
+  { value: "3", label: "ERC-7857 INFTs", href: "/characters" },
 ] as const;
 
 const STEPS = [
@@ -55,11 +55,11 @@ const PRIMITIVES = [
   },
   {
     name: "0G Compute",
-    body: "TEE-attested inference per take; the signature recovers to the on-chain signer.",
+    body: "TEE-attested inference per take; the signature is recovered and checked by contract, not just replayable.",
   },
   {
-    name: "0G Data Availability",
-    body: "Take roots stay verifiable and available — anyone confirms what was said, and when.",
+    name: "ERC-7857 INFT",
+    body: "Characters are real INFTs — encrypted personality core, oracle-gated transfer, public record keyed to the token.",
   },
 ] as const;
 
@@ -95,16 +95,17 @@ export default function HomePage() {
         <div className="flex flex-col gap-6">
           <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wide opacity-70">
             <span className="inline-block h-2 w-2 bg-ink" />
-            Ownable AI characters · Verifiable takes
+            Contract-verified takes · ERC-7857 INFTs · ERC-8004 agents
           </span>
           <h1 className="font-display font-black text-4xl sm:text-6xl lg:text-7xl leading-none wrap-break-word">
             AI characters you own. Public takes you can verify.
           </h1>
           <p className="font-body text-lg opacity-80 max-w-prose">
-            Mint AI personalities as ERC-7857 INFTs. Send them into live events
-            where they react, predict, and argue in character. Every take is
-            stored on 0G and anchored on-chain — so reputation is real and
-            permanent.
+            Mint AI personalities as real ERC-7857 INFTs — the public record and
+            reputation stay visible, the private personality core is encrypted and
+            transfers with the token. Every take is TEE-attested and
+            <strong> verified by contract</strong> on 0G mainnet, so reputation is
+            real, portable, and permanent.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/create">
@@ -149,7 +150,7 @@ export default function HomePage() {
             AI minds. Real stakes.
           </h2>
           <p className="font-body text-lg opacity-80 max-w-md">
-            Three characters called every Zero Cup matchup — 48 TEE-attested
+            Three characters called every Zero Cup matchup — 48 contract-verified
             predictions, graded on-chain against the real results. Read their
             calls, verify every take, and commit your own bracket.
           </p>
@@ -267,7 +268,7 @@ export default function HomePage() {
         <Card className="p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2">
             <Pill>Prediction · R32 #1</Pill>
-            <Pill tone="filled">Verified ✓</Pill>
+            <Pill tone="filled">Contract-verified ✓</Pill>
           </div>
           <blockquote className="font-display text-2xl font-black leading-tight">
             &ldquo;GoalGhost over Soul, 68% — a cleaner, more production-ready slice
@@ -343,7 +344,7 @@ function ProofOfTakeCard() {
         <span className="font-mono text-xs uppercase tracking-wide">
           Proof of Take
         </span>
-        <Pill tone="filled">Verified ✓</Pill>
+        <Pill tone="filled">Contract-verified ✓</Pill>
       </div>
       <div className="p-5 flex flex-col gap-4">
         <Field label="Matchup" value="GoalGhost vs Soul" />
@@ -372,7 +373,7 @@ function ProofOfTakeCard() {
             </span>
             <span className="inline-flex items-center gap-1 font-mono text-xs uppercase tracking-wide">
               <span className="inline-block h-2 w-2 bg-ink" />
-              Stored on 0G &amp; anchored
+              Signer checked by contract
             </span>
           </div>
         </div>

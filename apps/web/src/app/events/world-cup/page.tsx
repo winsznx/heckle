@@ -126,6 +126,7 @@ function TakeList({ takes }: { takes: MatchTake[] }) {
           takeRoot={t.takeRoot}
           txHash={t.txHash}
           verified={t.verified}
+          contractVerified={t.contractVerified}
           characterId={t.characterId}
           characterName={t.characterName}
           archetypeLabel={t.archetypeLabel}
