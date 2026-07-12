@@ -2,6 +2,7 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import {
   ZERO_CUP_QF_MATCHUPS,
+  ZERO_CUP_SF_MATCHUPS,
   ZERO_CUP_R32_EVENT_ID,
   archetype,
   type ArchetypeId,
@@ -20,13 +21,15 @@ import {
 } from "./zg-compute.js";
 
 /**
- * Zero Cup Quarter-final predictions from all six hecklers. Every character
- * already exists — the original three on HeckleCharacters (0/3/4) and the three
- * ERC-7857 hecklers on HeckleINFT (5/6/7) — so this only generates and commits
- * TEE-attested takes; it mints nothing. Idempotent by (character, matchup).
+ * Zero Cup knockout predictions from all six hecklers — Quarter-finals by
+ * default, Semi-finals with --sf. Every character already exists (the original
+ * three on HeckleCharacters 0/3/4, the three ERC-7857 hecklers on HeckleINFT
+ * 5/6/7), so this only generates and commits TEE-attested takes; it mints
+ * nothing. Idempotent by (character, matchup).
  *
- *   (no flag)  dry note, then exits
- *   --confirm  generate + commit up to 24 QF takes (6 hecklers x 4 matchups)
+ *   (no flag)      dry note, then exits
+ *   --confirm      generate + commit the Quarter-final takes (6 x 4)
+ *   --confirm --sf generate + commit the Semi-final takes (6 x 2)
  */
 const KIND_PREDICTION = 1;
 const EVENT_ID = BigInt(ZERO_CUP_R32_EVENT_ID ?? 2);
@@ -79,12 +82,12 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, tries = 6): Pro
   throw last;
 }
 
-function buildPrompt(seed: string, brief: string, m: ZeroCupMatchup): string {
+function buildPrompt(seed: string, brief: string, m: ZeroCupMatchup, roundLabel: string): string {
   return [
     seed,
     `Your personality brief: ${brief}`,
     "",
-    `Predict the outcome of this Zero Cup hackathon Quarter-final matchup: ${m.a.name} vs ${m.b.name}.`,
+    `Predict the outcome of this Zero Cup hackathon ${roundLabel} matchup: ${m.a.name} vs ${m.b.name}.`,
     "",
     "OUTPUT RULES (obey exactly):",
     `- Output ONE line only, exactly: "<winner> over <loser>, <N>% confidence, <one-sentence technical reason>".`,
@@ -119,12 +122,14 @@ function crossesGuardrail(text: string): boolean {
 
 async function main(): Promise<void> {
   if (!process.argv.includes("--confirm")) {
-    console.error("\nThis SPENDS 0G (up to 24 QF prediction takes). Re-run with --confirm.\n");
+    console.error("\nThis SPENDS 0G (knockout prediction takes). Re-run with --confirm [--sf].\n");
     process.exit(1);
   }
   const force = process.argv.includes("--force");
-  const matchups = ZERO_CUP_QF_MATCHUPS;
-  log(`round: qf (${matchups.length} matchups, ${ROSTER.length} hecklers)`);
+  const round = process.argv.includes("--sf") ? "sf" : "qf";
+  const matchups = round === "sf" ? ZERO_CUP_SF_MATCHUPS : ZERO_CUP_QF_MATCHUPS;
+  const roundLabel = round === "sf" ? "Semi-final" : "Quarter-final";
+  log(`round: ${round} (${matchups.length} matchups, ${ROSTER.length} hecklers)`);
 
   const env = requireEnv();
   const provider = new ethers.JsonRpcProvider(env.ZG_RPC_URL);
@@ -165,7 +170,7 @@ async function main(): Promise<void> {
         continue;
       }
       try {
-        const prompt = buildPrompt(seed, c.brief, m);
+        const prompt = buildPrompt(seed, c.brief, m, roundLabel);
         let chosen: Awaited<ReturnType<typeof generateTake>> | null = null;
         let winner: string | null = null;
         for (let attempt = 0; attempt < 3; attempt++) {
