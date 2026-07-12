@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ZERO_CUP_R16,
-  ZERO_CUP_R16_RESULTS,
+  ZERO_CUP_SETTLED,
   ZERO_CUP_R32_EVENT_ID,
 } from "@heckle/shared";
 import { Card } from "@/components/ui/Card";
@@ -17,9 +17,9 @@ import { R16_DEF, type Round } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
 
-// The 8 survivors are settled — everything from the live Quarter-finals inward
-// is what a visitor predicts.
-const SETTLED_ROUNDS: Round[] = ["R16"];
+// The 8 survivors, plus the Quarter-finals, are settled — everything from the
+// live Semi-finals inward is what a visitor predicts.
+const SETTLED_ROUNDS: Round[] = ["R16", "QF"];
 const PREDICT_NODES = R16_DEF.nodes.filter(
   (n) => !SETTLED_ROUNDS.includes(n.round),
 );
@@ -29,9 +29,9 @@ const HECKLE_R16_ID = "R16_8";
 export default function ZeroCupR16Page() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  // Seed the settled R16 winners (locked) so the survivors show their result and
-  // advance into the live Quarter-final ring.
-  const state = useBracketState(eventId, R16_DEF, ZERO_CUP_R16_RESULTS);
+  // Seed the settled R16 + Quarter-final winners (locked) so the survivors show
+  // their results and advance into the live Semi-final ring.
+  const state = useBracketState(eventId, R16_DEF, ZERO_CUP_SETTLED);
   const [selectedId, setSelectedId] = useState<string>(HECKLE_R16_ID);
 
   const innerPicked = PREDICT_NODES.filter((n) => state.picks[n.id]).length;
@@ -82,11 +82,12 @@ export default function ZeroCupR16Page() {
           {ZERO_CUP_R16.title}
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          The 8 survivors, on their own radial canvas — the Round of 16 is
-          settled. Tap any matchup to inspect the result and the
-          hecklers&rsquo; calls (each a TEE-attested take, stored on 0G and
+          The 8 survivors, on their own radial canvas — the Round of 16 and the
+          Quarter-finals are settled. Tap any matchup to inspect the result and
+          the hecklers&rsquo; calls (each a TEE-attested take, stored on 0G and
           committed on-chain before the result), then predict the live
-          Quarter-finals inward. Heckle beat AURA here and advanced.
+          Semi-finals inward. Heckle beat AURA here, then Turing&nbsp;Pits in the
+          Quarter-finals, and is now in the Top&nbsp;4.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link

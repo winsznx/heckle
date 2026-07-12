@@ -19,23 +19,25 @@ import { R32_DEF, type Round } from "@/lib/bracket-data";
 import { useBracketState } from "@/lib/bracket-state";
 import { useZeroCupTakes } from "@/lib/useZeroCupTakes";
 
-// R32 and R16 are settled — their winners seed onto the board and lock. What a
-// visitor predicts is everything from the live Quarter-finals inward.
-const SETTLED_ROUNDS: Round[] = ["R32", "R16"];
+// R32, R16 and the Quarter-finals are settled — their winners seed onto the
+// board and lock. What a visitor predicts is everything from the live
+// Semi-finals inward.
+const SETTLED_ROUNDS: Round[] = ["R32", "R16", "QF"];
 const PREDICT_NODES = R32_DEF.nodes.filter(
   (n) => !SETTLED_ROUNDS.includes(n.round),
 );
-// Land on Heckle's live matchup — QF4, Apps bracket: Turing Pits vs Heckle.
-const HECKLE_QF_ID = "QF_4";
+// Land on Heckle's live matchup — SF2: 4lpha AI vs Heckle.
+const HECKLE_SF_ID = "SF_2";
 
 export default function ZeroCupBracketPage() {
   const eventId = ZERO_CUP_R32_EVENT_ID;
   const { byMatchup } = useZeroCupTakes(eventId);
-  // Seed the settled R32 + R16 winners (locked) so they're already advanced
-  // inward on the full 32-entrant board — nothing is removed; teams move ring by
-  // ring as each round resolves, so the live Quarter-finals show the real four.
+  // Seed the settled R32 + R16 + Quarter-final winners (locked) so they're
+  // already advanced inward on the full 32-entrant board — nothing is removed;
+  // teams move ring by ring as each round resolves, so the live Semi-finals show
+  // the real two ties.
   const state = useBracketState(eventId, R32_DEF, ZERO_CUP_SETTLED);
-  const [selectedId, setSelectedId] = useState<string>(HECKLE_QF_ID);
+  const [selectedId, setSelectedId] = useState<string>(HECKLE_SF_ID);
 
   const innerPicked = PREDICT_NODES.filter((n) => state.picks[n.id]).length;
   const canCommit = Boolean(state.champion);
@@ -55,8 +57,8 @@ export default function ZeroCupBracketPage() {
     ? byMatchup.get(selectedNode.matchupId ?? selectedNode.id) ?? []
     : [];
 
-  // Cycle within the selected node's own round (flip through the four live QFs,
-  // or across all sixteen R32 fixtures when inspecting an old round).
+  // Cycle within the selected node's own round (flip between the two live
+  // semis, or across an old round's fixtures when inspecting it).
   const roundSiblings = selectedNode
     ? R32_DEF.nodes.filter((n) => n.round === selectedNode.round)
     : [];
@@ -82,7 +84,7 @@ export default function ZeroCupBracketPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="filled">R16 settled · Quarter-finals live</Pill>
+          <Pill tone="filled">Quarter-finals settled · Semi-finals live</Pill>
           <span className="font-mono text-xs uppercase opacity-60">
             Event #{eventId}
           </span>
@@ -91,12 +93,13 @@ export default function ZeroCupBracketPage() {
           Zero Cup bracket
         </h1>
         <p className="font-body text-lg opacity-80 max-w-prose">
-          The full 32-entrant board. R32 and the Round of 16 are settled — their
-          winners have advanced inward, and nothing leaves the bracket: teams move
-          ring by ring as each round resolves. Heckle came through the Apps bracket
-          to the Quarter-finals — it&rsquo;s Turing&nbsp;Pits vs Heckle in QF4. Tap
-          any matchup for the hecklers&rsquo; verified calls, then predict the live
-          Quarter-finals through to the champion.
+          The full 32-entrant board. R32, the Round of 16 and the Quarter-finals
+          are settled — their winners have advanced inward, and nothing leaves the
+          bracket: teams move ring by ring as each round resolves. Heckle beat
+          Turing&nbsp;Pits in the Quarter-finals and is now in the Top&nbsp;4 —
+          it&rsquo;s 4lpha&nbsp;AI vs Heckle in SF2. Tap any matchup for the
+          hecklers&rsquo; verified calls, then predict the live Semi-finals through
+          to the champion.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link

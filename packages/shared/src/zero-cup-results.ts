@@ -40,10 +40,24 @@ export const ZERO_CUP_R16_RESULTS: Record<string, string> = {
   R16_8: "Heckle",
 };
 
-/** Every settled node so far — R32 winners plus the R16 winners. */
+/**
+ * Official Quarter-final outcomes, from the Semi-final draw (0g.ai/arena).
+ * Keyed by the inner QF node id ("QF_1"…"QF_4"), so they seed straight onto the
+ * radial board and the Semi-final ring resolves to the real pairings. Heckle
+ * beat Turing Pits in QF4 and advanced to the Top 4 — SF2 vs 4lpha AI.
+ */
+export const ZERO_CUP_QF_RESULTS: Record<string, string> = {
+  QF_1: "AskZero",
+  QF_2: "Zerun",
+  QF_3: "4lpha AI",
+  QF_4: "Heckle",
+};
+
+/** Every settled node so far — R32, R16, and Quarter-final winners. */
 export const ZERO_CUP_SETTLED: Record<string, string> = {
   ...ZERO_CUP_R32_RESULTS,
   ...ZERO_CUP_R16_RESULTS,
+  ...ZERO_CUP_QF_RESULTS,
 };
 
 /** Reputation deltas (maybe.md scoring). */
