@@ -58,68 +58,97 @@ export function useZeroCupTakes(eventId: number | null): {
     refetchInterval: 8000,
     queryFn: async (): Promise<MatchTake[]> => {
       if (!publicClient || eventId === null) return [];
-      const logs = await publicClient.getLogs({
-        address: takesContract.address,
-        event: takesContract.abi[0],
-        args: { eventId: BigInt(eventId) },
-        fromBlock: FROM_BLOCK,
-        toBlock: "latest",
-      });
+      // The take LIST is the union of two on-chain sources, deduped by storage
+      // root: the legacy HeckleTakes log (original R32 / R16 / World-Cup takes)
+      // and the verified-only HeckleVerifiedTakes log (the knockout rounds —
+      // QF / SF — are committed verified-only, so they live only here). Both
+      // queries are best-effort; neither may gate the other.
+      const [legacyLogs, verifiedLogs] = await Promise.all([
+        publicClient
+          .getLogs({
+            address: takesContract.address,
+            event: takesContract.abi[0],
+            args: { eventId: BigInt(eventId) },
+            fromBlock: FROM_BLOCK,
+            toBlock: "latest",
+          })
+          .catch(() => []),
+        publicClient
+          .getLogs({
+            address: verifiedTakesContract.address,
+            event: verifiedTakesContract.abi[0],
+            args: { eventId: BigInt(eventId) },
+            fromBlock: FROM_BLOCK,
+            toBlock: "latest",
+          })
+          .catch(() => []),
+      ]);
 
-      // Contract-verification annotation is best-effort: takeRoot -> on-chain TEE
-      // signer, read from HeckleVerifiedTakes. It must NEVER gate the take list —
-      // if this query fails, takes still render (just without the verified badge).
+      // takeRoot -> on-chain TEE signer, so a take can be marked contract-verified.
       const verifiedByRoot = new Map<string, string>();
-      try {
-        const verifiedLogs = await publicClient.getLogs({
-          address: verifiedTakesContract.address,
-          event: verifiedTakesContract.abi[0],
-          args: { eventId: BigInt(eventId) },
-          fromBlock: FROM_BLOCK,
-          toBlock: "latest",
-        });
-        for (const vl of verifiedLogs) {
-          const root = vl.args.takeRoot;
-          const signer = vl.args.signer;
-          if (typeof root === "string" && typeof signer === "string") {
-            verifiedByRoot.set(root.toLowerCase(), signer);
-          }
+      for (const vl of verifiedLogs) {
+        const root = vl.args.takeRoot;
+        const signer = vl.args.signer;
+        if (typeof root === "string" && typeof signer === "string") {
+          verifiedByRoot.set(root.toLowerCase(), signer);
         }
-      } catch {
-        // best-effort annotation only
+      }
+
+      interface RawTake {
+        takeId: bigint;
+        characterId: bigint;
+        kind: number;
+        ts: bigint;
+        root: `0x${string}`;
+        txHash: string;
+      }
+      const byRoot = new Map<string, RawTake>();
+      const add = (
+        takeId: unknown,
+        characterId: unknown,
+        kind: unknown,
+        ts: unknown,
+        root: unknown,
+        txHash: string,
+      ) => {
+        if (
+          typeof takeId !== "bigint" ||
+          typeof characterId !== "bigint" ||
+          typeof kind !== "number" ||
+          typeof ts !== "bigint" ||
+          typeof root !== "string"
+        ) {
+          return;
+        }
+        const key = root.toLowerCase();
+        if (!byRoot.has(key)) {
+          byRoot.set(key, { takeId, characterId, kind, ts, root: root as `0x${string}`, txHash });
+        }
+      };
+      for (const log of legacyLogs) {
+        add(log.args.takeId, log.args.characterId, log.args.kind, log.args.timestamp, log.args.takeRoot, String(log.transactionHash ?? ""));
+      }
+      for (const log of verifiedLogs) {
+        add(log.args.takeId, log.args.characterId, log.args.kind, log.args.timestamp, log.args.takeRoot, String(log.transactionHash ?? ""));
       }
 
       const out = await Promise.all(
-        logs.map(async (log) => {
-          const takeId = log.args.takeId;
-          const characterId = log.args.characterId;
-          const kind = log.args.kind;
-          const ts = log.args.timestamp;
-          const root = log.args.takeRoot;
-          if (
-            typeof takeId !== "bigint" ||
-            typeof characterId !== "bigint" ||
-            typeof kind !== "number" ||
-            typeof ts !== "bigint" ||
-            typeof root !== "string"
-          ) {
-            return null;
-          }
-          const blob = await fetchBlob<TakeBlob>(root);
+        [...byRoot.values()].map(async (r) => {
+          const blob = await fetchBlob<TakeBlob>(r.root);
           if (!hasVerifiedAttestation(blob)) return null;
           return {
-            takeId: takeId.toString(),
+            takeId: r.takeId.toString(),
             matchupId: typeof blob?.matchupId === "string" ? blob.matchupId : "",
             prediction:
               typeof blob?.prediction === "string" ? blob.prediction : null,
-            characterId: characterId.toString(),
-            kind,
-            timestamp: ts,
-            takeRoot: root as `0x${string}`,
-            txHash: String(log.transactionHash ?? ""),
+            characterId: r.characterId.toString(),
+            kind: r.kind,
+            timestamp: r.ts,
+            takeRoot: r.root,
+            txHash: r.txHash,
             verified: blob?.inferenceAttestation?.valid === true,
-            contractVerified: verifiedByRoot.has(root.toLowerCase()),
-            onchainSigner: verifiedByRoot.get(root.toLowerCase()) ?? null,
+            contractVerified: verifiedByRoot.has(r.root.toLowerCase()),
+            onchainSigner: verifiedByRoot.get(r.root.toLowerCase()) ?? null,
             text: blob?.text ?? null,
           } satisfies MatchTake;
         }),
